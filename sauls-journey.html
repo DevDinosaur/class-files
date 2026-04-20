@@ -1,0 +1,1856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>Saul's Journey — A Bible Expedition</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=IM+Fell+English+SC&display=swap" rel="stylesheet">
+<style>
+  /* =========================================================
+     THEME TOKENS
+     ========================================================= */
+  :root {
+    --ink: #2b1d0e;
+    --ink-soft: #4a3520;
+    --parchment: #f0e3c6;
+    --parchment-dark: #d9c396;
+    --parchment-shadow: #b89a68;
+    --gold: #c9a34f;
+    --gold-bright: #e8c878;
+    --seal-red: #8b2c1a;
+    --seal-red-dark: #5a1a0f;
+    --moss: #4a6b3a;
+    --moss-bright: #6d9656;
+    --leather: #8b4513;
+    --ember: #d97a3b;
+    --shadow: rgba(43, 29, 14, 0.35);
+
+    --font-display: 'Cinzel', 'Trajan Pro', serif;
+    --font-accent: 'IM Fell English SC', 'Palatino', serif;
+    --font-body: 'EB Garamond', 'Garamond', serif;
+
+    --radius: 4px;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+    font-family: var(--font-body);
+    color: var(--ink);
+    font-size: 18px;
+    line-height: 1.55;
+  }
+
+  body {
+    /* Layered parchment: warm base + radial blotches + subtle noise via gradients */
+    background-color: var(--parchment);
+    background-image:
+      radial-gradient(ellipse at 20% 10%, rgba(139,69,19,0.12) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 30%, rgba(184,154,104,0.3) 0%, transparent 55%),
+      radial-gradient(ellipse at 30% 80%, rgba(139,44,26,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse at 90% 90%, rgba(43,29,14,0.15) 0%, transparent 55%),
+      radial-gradient(circle at 50% 50%, rgba(240,227,198,1) 0%, rgba(217,195,150,1) 100%);
+    background-attachment: scroll;
+    padding: 12px;
+    overflow-x: hidden;
+  }
+
+  /* Faint paper grain using layered linear gradients */
+  body::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.35;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(43,29,14,0.025) 0 1px, transparent 1px 3px),
+      repeating-linear-gradient(90deg, rgba(43,29,14,0.02) 0 1px, transparent 1px 4px);
+    mix-blend-mode: multiply;
+    z-index: 0;
+  }
+
+  #app {
+    max-width: 680px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* =========================================================
+     TYPOGRAPHY
+     ========================================================= */
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    color: var(--ink);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    margin: 0;
+  }
+
+  h1 { font-size: 2rem; line-height: 1.1; }
+  h2 { font-size: 1.5rem; line-height: 1.15; }
+  h3 { font-size: 1.15rem; letter-spacing: 0.12em; text-transform: uppercase; }
+
+  .eyebrow {
+    font-family: var(--font-accent);
+    font-size: 0.85rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--seal-red);
+    margin-bottom: 8px;
+  }
+
+  p { margin: 0 0 14px 0; }
+
+  /* =========================================================
+     SCORE HEADER
+     ========================================================= */
+  .score-header {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 18px;
+    padding: 14px 12px;
+    background: linear-gradient(180deg, rgba(139,44,26,0.08) 0%, rgba(139,44,26,0.02) 100%);
+    border-top: 2px solid var(--seal-red-dark);
+    border-bottom: 2px solid var(--seal-red-dark);
+    position: relative;
+  }
+
+  .score-header::before,
+  .score-header::after {
+    content: '✦';
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--gold);
+    font-size: 0.9rem;
+  }
+  .score-header::before { left: 8px; }
+  .score-header::after { right: 8px; }
+
+  .score-card {
+    text-align: center;
+    padding: 8px 4px;
+    position: relative;
+  }
+
+  .score-card .name {
+    font-family: var(--font-accent);
+    font-size: 0.8rem;
+    letter-spacing: 0.15em;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .score-card .points {
+    font-family: var(--font-display);
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: var(--ink);
+    line-height: 1;
+    margin-top: 2px;
+  }
+
+  .score-card.flash {
+    animation: scoreFlash 0.9s var(--ease);
+  }
+
+  @keyframes scoreFlash {
+    0%   { transform: scale(1);    text-shadow: none; background: transparent; }
+    20%  { transform: scale(1.18); background: rgba(201,163,79,0.4); }
+    100% { transform: scale(1);    background: transparent; }
+  }
+
+  /* =========================================================
+     FRAMED CONTENT CARDS
+     ========================================================= */
+  .frame {
+    position: relative;
+    background: linear-gradient(180deg, rgba(240,227,198,0.6), rgba(217,195,150,0.85));
+    border: 1px solid var(--parchment-shadow);
+    padding: 28px 22px;
+    box-shadow:
+      0 2px 0 rgba(255,255,255,0.6) inset,
+      0 -2px 0 rgba(43,29,14,0.1) inset,
+      0 12px 30px -8px var(--shadow);
+    margin-bottom: 18px;
+  }
+
+  .frame::before,
+  .frame::after {
+    content: '';
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    border: 1px solid var(--gold);
+  }
+  .frame::before { top: 6px; left: 6px; border-right: none; border-bottom: none; }
+  .frame::after  { bottom: 6px; right: 6px; border-left: none; border-top: none; }
+
+  .frame-corners-extra::before,
+  .frame-corners-extra::after {
+    opacity: 0.7;
+  }
+
+  /* Divider flourish: quill stroke */
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 18px 0;
+    color: var(--gold);
+    font-size: 0.9rem;
+  }
+  .divider::before,
+  .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--ink-soft), transparent);
+    opacity: 0.4;
+  }
+
+  /* =========================================================
+     BUTTONS
+     ========================================================= */
+  button {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-size: 0.95rem;
+    color: var(--parchment);
+    background: linear-gradient(180deg, var(--ink-soft), var(--ink));
+    border: 1px solid var(--ink);
+    padding: 14px 22px;
+    min-height: 48px;
+    cursor: pointer;
+    border-radius: var(--radius);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.15) inset,
+      0 4px 10px -2px rgba(43,29,14,0.4);
+    transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease), filter 0.15s var(--ease);
+  }
+
+  button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    filter: brightness(1.1);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.2) inset,
+      0 6px 16px -2px rgba(43,29,14,0.5);
+  }
+
+  button:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+
+  button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  button.btn-gold {
+    background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+    color: var(--ink);
+    border-color: var(--leather);
+  }
+
+  button.btn-seal {
+    background: linear-gradient(180deg, #a8341f, var(--seal-red-dark));
+    border-color: var(--seal-red-dark);
+  }
+
+  button.btn-ghost {
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid var(--ink-soft);
+    box-shadow: none;
+  }
+
+  button.btn-ghost:hover:not(:disabled) {
+    background: rgba(43,29,14,0.08);
+  }
+
+  /* =========================================================
+     SETUP SCREEN
+     ========================================================= */
+  .title-wrap {
+    text-align: center;
+    padding: 32px 16px 20px;
+  }
+
+  .title-wrap .tag {
+    font-family: var(--font-accent);
+    letter-spacing: 0.4em;
+    font-size: 0.8rem;
+    color: var(--seal-red);
+    margin-bottom: 14px;
+  }
+
+  .title-wrap h1 {
+    font-size: 2.6rem;
+    line-height: 1.05;
+    font-weight: 900;
+    color: var(--ink);
+    text-shadow: 0 1px 0 rgba(255,255,255,0.4);
+  }
+
+  .title-wrap .sub {
+    font-family: var(--font-accent);
+    font-style: normal;
+    font-size: 0.95rem;
+    letter-spacing: 0.2em;
+    color: var(--ink-soft);
+    margin-top: 12px;
+  }
+
+  .compass {
+    display: flex;
+    justify-content: center;
+    margin: 16px 0;
+  }
+
+  .compass svg {
+    animation: compassTurn 40s linear infinite;
+  }
+
+  @keyframes compassTurn {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+
+  .field label {
+    display: block;
+    font-family: var(--font-accent);
+    font-size: 0.85rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+
+  .field input {
+    width: 100%;
+    font-family: var(--font-body);
+    font-size: 1.15rem;
+    padding: 12px 14px;
+    min-height: 48px;
+    background: rgba(255,255,255,0.4);
+    border: 1px solid var(--parchment-shadow);
+    border-radius: var(--radius);
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .field input:focus {
+    border-color: var(--seal-red);
+    background: rgba(255,255,255,0.6);
+  }
+
+  .field {
+    margin-bottom: 14px;
+  }
+
+  /* =========================================================
+     DISCOVERY SCREEN
+     ========================================================= */
+  .discovery-hero {
+    text-align: center;
+    margin-bottom: 8px;
+  }
+
+  .cycle-num {
+    font-family: var(--font-accent);
+    font-size: 0.8rem;
+    letter-spacing: 0.4em;
+    color: var(--seal-red);
+    margin-bottom: 8px;
+  }
+
+  .discovery-hero h2 {
+    font-size: 1.9rem;
+    color: var(--ink);
+  }
+
+  .narrative {
+    font-family: var(--font-body);
+    font-size: 1.1rem;
+    line-height: 1.7;
+    color: var(--ink);
+    margin: 16px 0;
+  }
+
+  .narrative::first-letter {
+    font-family: var(--font-display);
+    font-size: 3rem;
+    font-weight: 900;
+    float: left;
+    line-height: 0.9;
+    padding-right: 10px;
+    padding-top: 4px;
+    color: var(--seal-red);
+  }
+
+  /* Scripture scroll */
+  .scripture {
+    position: relative;
+    margin: 20px -8px;
+    padding: 22px 28px 22px 28px;
+    background:
+      linear-gradient(180deg, rgba(201,163,79,0.15), rgba(201,163,79,0.05)),
+      linear-gradient(180deg, #ecd9a6, #d9bf7f);
+    border-top: 1px solid var(--gold);
+    border-bottom: 1px solid var(--gold);
+    box-shadow:
+      0 2px 0 rgba(255,255,255,0.3) inset,
+      0 -2px 0 rgba(0,0,0,0.08) inset;
+    font-family: var(--font-body);
+    font-style: italic;
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: var(--ink);
+  }
+
+  .scripture::before,
+  .scripture::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 20px;
+    background:
+      radial-gradient(ellipse at center, #8a6e38 0%, #5d4a22 100%);
+    box-shadow:
+      inset 0 0 6px rgba(0,0,0,0.4),
+      2px 0 6px rgba(0,0,0,0.15);
+  }
+  .scripture::before { left: -8px; border-radius: 2px 0 0 2px; }
+  .scripture::after  { right: -8px; border-radius: 0 2px 2px 0; }
+
+  .scripture .ref {
+    display: block;
+    font-family: var(--font-accent);
+    font-style: normal;
+    font-size: 0.8rem;
+    letter-spacing: 0.3em;
+    text-align: right;
+    color: var(--seal-red);
+    margin-top: 10px;
+  }
+
+  /* Field note — leather tag */
+  .field-note {
+    margin: 18px 0;
+    padding: 14px 18px 14px 50px;
+    background: linear-gradient(180deg, rgba(74,107,58,0.18), rgba(74,107,58,0.08));
+    border-left: 4px solid var(--moss);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    position: relative;
+    font-family: var(--font-body);
+    font-size: 1rem;
+    line-height: 1.5;
+    color: var(--ink);
+  }
+
+  .field-note::before {
+    content: '❊';
+    position: absolute;
+    left: 16px;
+    top: 12px;
+    font-size: 1.4rem;
+    color: var(--moss);
+  }
+
+  .field-note .label {
+    display: block;
+    font-family: var(--font-accent);
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    color: var(--moss);
+    margin-bottom: 4px;
+  }
+
+  .centered-actions {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 18px;
+    flex-wrap: wrap;
+  }
+
+  /* =========================================================
+     CHALLENGE / QUESTION SCREEN
+     ========================================================= */
+  .q-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+  }
+
+  .q-header .meta {
+    font-family: var(--font-accent);
+    font-size: 0.8rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+
+  .q-header .stage {
+    font-family: var(--font-accent);
+    font-size: 0.75rem;
+    letter-spacing: 0.25em;
+    color: var(--seal-red);
+  }
+
+  .question-text {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 1.4rem;
+    line-height: 1.3;
+    color: var(--ink);
+    margin: 10px 0 18px;
+  }
+
+  /* Timer */
+  .timer {
+    height: 10px;
+    background: rgba(43,29,14,0.15);
+    border: 1px solid var(--ink-soft);
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 16px;
+  }
+
+  .timer-fill {
+    height: 100%;
+    width: 100%;
+    background: var(--moss-bright);
+    transition: width 0.1s linear, background 0.4s var(--ease);
+    border-radius: 20px;
+  }
+
+  .timer.warn .timer-fill { background: var(--gold-bright); }
+  .timer.danger .timer-fill {
+    background: var(--seal-red);
+    animation: urgentPulse 0.6s ease-in-out infinite alternate;
+  }
+
+  @keyframes urgentPulse {
+    from { box-shadow: 0 0 0 0 rgba(139,44,26,0.6); }
+    to   { box-shadow: 0 0 12px 4px rgba(139,44,26,0.7); }
+  }
+
+  .timer-label {
+    text-align: center;
+    font-family: var(--font-accent);
+    font-size: 0.75rem;
+    letter-spacing: 0.3em;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+
+  /* Answer grid */
+  .answer-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .answer-btn {
+    font-family: var(--font-body);
+    font-size: 1.05rem;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0.02em;
+    color: var(--ink);
+    background: linear-gradient(180deg, rgba(255,255,255,0.35), rgba(217,195,150,0.6));
+    border: 2px solid var(--parchment-shadow);
+    padding: 16px 14px;
+    min-height: 72px;
+    text-align: left;
+    line-height: 1.35;
+    cursor: pointer;
+    border-radius: var(--radius);
+    position: relative;
+    overflow: hidden;
+    transition: all 0.2s var(--ease);
+    box-shadow: 0 2px 6px -2px var(--shadow);
+  }
+
+  .answer-btn .letter {
+    display: inline-block;
+    font-family: var(--font-display);
+    font-weight: 900;
+    color: var(--seal-red);
+    margin-right: 8px;
+    font-size: 1.1rem;
+  }
+
+  .answer-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    border-color: var(--seal-red);
+    filter: brightness(1.05);
+  }
+
+  .answer-btn.correct {
+    background: linear-gradient(180deg, #d4e5c3, #a8cb8d);
+    border-color: var(--moss);
+    color: var(--ink);
+    animation: correctGlow 0.6s var(--ease);
+  }
+
+  .answer-btn.wrong {
+    background: linear-gradient(180deg, #e8b8a8, #c98574);
+    border-color: var(--seal-red);
+    color: var(--ink);
+  }
+
+  .answer-btn.correct .letter { color: var(--moss); }
+  .answer-btn.wrong .letter   { color: var(--seal-red-dark); }
+
+  @keyframes correctGlow {
+    0%   { box-shadow: 0 0 0 0 rgba(74,107,58,0); }
+    40%  { box-shadow: 0 0 18px 6px rgba(109,150,86,0.7); }
+    100% { box-shadow: 0 2px 6px -2px var(--shadow); }
+  }
+
+  .explanation {
+    padding: 14px 16px;
+    background: rgba(201,163,79,0.18);
+    border-left: 3px solid var(--gold);
+    margin: 12px 0;
+    font-family: var(--font-body);
+    font-size: 1.02rem;
+    line-height: 1.5;
+  }
+
+  .award-panel {
+    background: rgba(139,44,26,0.08);
+    border: 1px dashed var(--seal-red);
+    padding: 14px;
+    border-radius: var(--radius);
+    margin-top: 10px;
+  }
+
+  .award-panel .label {
+    text-align: center;
+    font-family: var(--font-accent);
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    color: var(--seal-red);
+    margin-bottom: 10px;
+  }
+
+  .award-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .award-grid button {
+    font-size: 0.85rem;
+    padding: 12px 6px;
+    min-height: 48px;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .award-grid button.awarded {
+    background: linear-gradient(180deg, var(--moss-bright), var(--moss));
+    color: var(--parchment);
+    border-color: var(--moss);
+  }
+
+  /* =========================================================
+     MAP CHALLENGE
+     ========================================================= */
+  .map-challenge {
+    margin-top: 10px;
+  }
+
+  .map-board {
+    position: relative;
+    width: 100%;
+    padding-top: 95%; /* aspect ratio wrapper for SVG */
+    background:
+      radial-gradient(ellipse at 60% 40%, rgba(201,163,79,0.25) 0%, transparent 65%),
+      linear-gradient(135deg, #e8d4a3, #c9ae7a);
+    border: 1px solid var(--leather);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: 0 4px 18px -6px var(--shadow);
+  }
+
+  .map-board svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .map-city {
+    cursor: pointer;
+    transition: transform 0.2s var(--ease);
+  }
+
+  .map-city circle.pin {
+    fill: var(--seal-red);
+    stroke: var(--parchment);
+    stroke-width: 2;
+    transition: fill 0.2s, r 0.2s;
+  }
+
+  .map-city.placed circle.pin {
+    fill: var(--moss);
+  }
+
+  .map-city.start circle.pin {
+    fill: var(--ink);
+  }
+
+  .map-city:hover circle.pin {
+    r: 11;
+  }
+
+  .map-city text {
+    font-family: var(--font-accent);
+    font-size: 13px;
+    fill: var(--ink);
+    letter-spacing: 2px;
+    paint-order: stroke;
+    stroke: rgba(240,227,198,0.9);
+    stroke-width: 3;
+    stroke-linejoin: round;
+  }
+
+  .map-city .order-num {
+    font-family: var(--font-display);
+    font-weight: 900;
+    fill: var(--parchment);
+    stroke: none;
+    font-size: 11px;
+    letter-spacing: 0;
+    text-anchor: middle;
+    dominant-baseline: central;
+  }
+
+  .map-instructions {
+    text-align: center;
+    font-family: var(--font-accent);
+    letter-spacing: 0.2em;
+    font-size: 0.9rem;
+    color: var(--ink-soft);
+    margin-top: 10px;
+  }
+
+  .map-sequence {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    margin: 12px 0;
+  }
+
+  .map-sequence .slot {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: rgba(43,29,14,0.08);
+    border: 1px dashed var(--ink-soft);
+    border-radius: 20px;
+    font-family: var(--font-accent);
+    letter-spacing: 0.15em;
+    font-size: 0.85rem;
+    min-height: 34px;
+  }
+
+  .map-sequence .slot.filled {
+    background: rgba(74,107,58,0.18);
+    border: 1px solid var(--moss);
+  }
+
+  .map-sequence .slot.correct {
+    background: rgba(74,107,58,0.35);
+    border: 1px solid var(--moss);
+  }
+
+  .map-sequence .slot.incorrect {
+    background: rgba(139,44,26,0.25);
+    border: 1px solid var(--seal-red);
+  }
+
+  .map-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+
+  /* =========================================================
+     CHECKPOINT / TRANSITION SCREEN
+     ========================================================= */
+  .checkpoint {
+    text-align: center;
+    padding: 50px 20px;
+  }
+
+  .checkpoint .banner {
+    font-family: var(--font-accent);
+    font-size: 0.85rem;
+    letter-spacing: 0.45em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 14px;
+    opacity: 0;
+    animation: fadeInUp 0.6s var(--ease) 0.2s forwards;
+  }
+
+  .checkpoint h2 {
+    font-size: 2.2rem;
+    color: var(--ink);
+    margin-bottom: 8px;
+    opacity: 0;
+    animation: fadeInUp 0.6s var(--ease) 0.5s forwards;
+  }
+
+  .checkpoint .subtitle {
+    font-family: var(--font-body);
+    font-style: italic;
+    font-size: 1.15rem;
+    color: var(--ink-soft);
+    margin-bottom: 30px;
+    opacity: 0;
+    animation: fadeInUp 0.6s var(--ease) 0.8s forwards;
+  }
+
+  .pin-drop {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+    opacity: 0;
+    animation: pinDropIn 0.9s var(--ease) 1s forwards;
+  }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes pinDropIn {
+    0%   { opacity: 0; transform: translateY(-40px) scale(0.6); }
+    60%  { opacity: 1; transform: translateY(4px) scale(1.05); }
+    80%  { transform: translateY(-2px) scale(0.98); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .pin-drop svg {
+    filter: drop-shadow(0 4px 6px rgba(43,29,14,0.4));
+  }
+
+  .checkpoint-actions {
+    margin-top: 30px;
+    opacity: 0;
+    animation: fadeInUp 0.6s var(--ease) 1.6s forwards;
+  }
+
+  /* =========================================================
+     FINAL / PODIUM SCREEN
+     ========================================================= */
+  .podium-wrap {
+    text-align: center;
+    padding: 24px 12px;
+  }
+
+  .podium-wrap .eyebrow {
+    margin-bottom: 6px;
+  }
+
+  .podium-wrap h2 {
+    font-size: 2rem;
+    margin-bottom: 24px;
+  }
+
+  .podium {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    align-items: end;
+    gap: 12px;
+    max-width: 560px;
+    margin: 0 auto 30px;
+  }
+
+  .podium-spot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .medal {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 1.6rem;
+    color: var(--ink);
+    box-shadow:
+      inset 0 -3px 6px rgba(0,0,0,0.25),
+      inset 0 3px 6px rgba(255,255,255,0.4),
+      0 4px 12px rgba(43,29,14,0.3);
+    border: 3px solid var(--ink);
+  }
+
+  .medal.gold   { background: radial-gradient(circle at 35% 30%, #f7dd9a, var(--gold), #8f6a1f); }
+  .medal.silver { background: radial-gradient(circle at 35% 30%, #f2f2f2, #c8c8c8, #7f7f7f); }
+  .medal.bronze { background: radial-gradient(circle at 35% 30%, #e2b08a, #b5793e, #6a3f18); }
+
+  .podium-spot .player-name {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    font-size: 1rem;
+    color: var(--ink);
+    text-align: center;
+    min-height: 1.2em;
+  }
+
+  .podium-spot .player-score {
+    font-family: var(--font-accent);
+    letter-spacing: 0.2em;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+  }
+
+  .podium-block {
+    width: 100%;
+    background: linear-gradient(180deg, var(--parchment-dark), var(--parchment-shadow));
+    border: 1px solid var(--leather);
+    border-bottom: none;
+    box-shadow: inset 0 4px 0 rgba(255,255,255,0.3);
+    display: grid;
+    place-items: center;
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 1.4rem;
+    color: var(--ink);
+    letter-spacing: 0.08em;
+  }
+
+  .podium-block.first  { height: 130px; }
+  .podium-block.second { height: 100px; }
+  .podium-block.third  { height: 75px; }
+
+  /* =========================================================
+     ANIMATIONS (generic)
+     ========================================================= */
+  .animate-in {
+    animation: slideUpFade 0.55s var(--ease) both;
+  }
+
+  @keyframes slideUpFade {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .stagger > * { opacity: 0; animation: slideUpFade 0.55s var(--ease) both; }
+  .stagger > *:nth-child(1) { animation-delay: 0.05s; }
+  .stagger > *:nth-child(2) { animation-delay: 0.18s; }
+  .stagger > *:nth-child(3) { animation-delay: 0.30s; }
+  .stagger > *:nth-child(4) { animation-delay: 0.42s; }
+  .stagger > *:nth-child(5) { animation-delay: 0.54s; }
+  .stagger > *:nth-child(6) { animation-delay: 0.66s; }
+
+  /* Very small screens */
+  @media (max-width: 420px) {
+    body { padding: 6px; font-size: 17px; }
+    h1 { font-size: 1.7rem; }
+    .title-wrap h1 { font-size: 2.1rem; }
+    .frame { padding: 20px 16px; }
+    .scripture { padding: 18px 22px; margin-left: -4px; margin-right: -4px; }
+    .question-text { font-size: 1.2rem; }
+    .answer-btn { font-size: 1rem; padding: 14px 12px; min-height: 64px; }
+    .score-card .name { font-size: 0.72rem; }
+    .score-card .points { font-size: 1.5rem; }
+    .medal { width: 54px; height: 54px; font-size: 1.3rem; }
+    .podium-block.first  { height: 110px; }
+    .podium-block.second { height: 85px; }
+    .podium-block.third  { height: 65px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<script>
+/* =========================================================
+   GAME DATA
+   ========================================================= */
+const CYCLES = [
+  {
+    title: "The Hunter",
+    subtitle: "Cycle I — Before the Road",
+    narrative:
+      "Before anyone called him Paul, Saul was a rising star among the Pharisees, trained in Jerusalem under the famous rabbi Gamaliel. When Stephen was stoned for preaching Jesus, Saul stood there and approved. That day lit a fire in him. He launched a door-to-door campaign, hauling men and women off to prison. In his own mind, he was defending God.",
+    scripture: {
+      text: "\u201CBut Saul was ravaging the church. Entering house after house, he dragged off men and women and committed them to prison.\u201D",
+      ref: "Acts 8:3"
+    },
+    fieldNote: {
+      label: "Field Note",
+      text: "The Greek word for \u201Cravaging\u201D (lumainomai) was used for a wild animal mauling its prey. Luke is not describing tidy arrests. He is describing a predator."
+    },
+    questions: [
+      {
+        q: "At Stephen's stoning, what was Saul's role?",
+        type: "mc",
+        options: [
+          "He threw the first stone",
+          "He held the coats of the witnesses",
+          "He was away in Damascus",
+          "He was preaching in the temple"
+        ],
+        correct: 1,
+        explain: "Acts 7:58 says the witnesses laid their coats at the feet of a young man named Saul. He did not throw stones. He approved."
+      },
+      {
+        q: "True or False: Saul trained in Jerusalem under the rabbi Gamaliel.",
+        type: "tf",
+        options: ["True", "False"],
+        correct: 0,
+        explain: "Paul himself says so in Acts 22:3. Gamaliel was one of the most respected rabbis of his generation."
+      },
+      {
+        q: "According to Acts 8:3, where did Saul go looking for believers?",
+        type: "mc",
+        options: [
+          "Only the temple courts",
+          "Only the synagogues",
+          "House to house",
+          "Only in Damascus"
+        ],
+        correct: 2,
+        explain: "Saul went house to house. He was not waiting for believers to show up. He was hunting them where they lived."
+      }
+    ]
+  },
+  {
+    title: "The Road",
+    subtitle: "Cycle II — Damascus Road",
+    narrative:
+      "Saul got official letters from the high priest. Any believer he found in the synagogues of Damascus, he could drag back to Jerusalem in chains. He set out north. Somewhere near the city, a light from heaven flashed around him and knocked him flat. A voice said, \u201CSaul, Saul, why are you persecuting me?\u201D He stood up blind. For three days he sat in the dark. No food. No water.",
+    scripture: {
+      text: "\u201CSaul, Saul, why are you persecuting me?\u201D He asked, \u201CWho are you, Lord?\u201D And He said, \u201CI am Jesus, whom you are persecuting.\u201D",
+      ref: "Acts 9:4–5"
+    },
+    fieldNote: {
+      label: "Field Note",
+      text: "Damascus is roughly 135 miles from Jerusalem. That is a 5 to 7 day walk. Saul had that long to be sure he was right, and then one moment to discover he was wrong."
+    },
+    questions: [
+      {
+        q: "Who did the voice from the light say Saul was persecuting?",
+        type: "mc",
+        options: ["Stephen", "Gamaliel", "Jesus", "An angel of the Lord"],
+        correct: 2,
+        explain: "Jesus identifies himself with his people. When Saul attacked Christians, he was attacking Jesus himself."
+      },
+      {
+        q: "How many days was Saul blind after the vision?",
+        type: "mc",
+        options: ["One day", "Three days", "Seven days", "Forty days"],
+        correct: 1,
+        explain: "Three days of darkness. A man who thought he could see everything learns he has been blind the whole time."
+      },
+      {
+        q: "True or False: Saul kept eating and drinking while he was blind.",
+        type: "tf",
+        options: ["True", "False"],
+        correct: 1,
+        explain: "Acts 9:9 says for three days he was without sight, and did not eat or drink. This was a fast of shock and repentance."
+      }
+    ]
+  },
+  {
+    title: "The New Man",
+    subtitle: "Cycle III — Sight and Baptism",
+    narrative:
+      "A disciple named Ananias was living in Damascus, minding his own business. Then Jesus spoke to him in a vision: go to Straight Street, find a man named Saul, and lay hands on him. Ananias was terrified. He knew exactly who Saul was. But he obeyed. When he laid his hands on Saul, something like scales fell away. Saul was baptized, ate his first meal in three days, and immediately began preaching Jesus in the synagogues.",
+    scripture: {
+      text: "\u201CImmediately he proclaimed Jesus in the synagogues, saying, \u2018He is the Son of God.\u2019\u201D",
+      ref: "Acts 9:20"
+    },
+    fieldNote: {
+      label: "Field Note",
+      text: "Straight Street in Damascus still exists. Its Latin name is Via Recta. It has been a major road for over two thousand years, and tourists can walk it today."
+    },
+    questions: [
+      {
+        q: "Who did God send to lay hands on Saul and heal his sight?",
+        type: "mc",
+        options: ["Barnabas", "Peter", "Ananias", "Philip"],
+        correct: 2,
+        explain: "Ananias, a disciple in Damascus. He was not an apostle. He was just a faithful believer who obeyed a scary assignment."
+      },
+      {
+        q: "When Saul's sight came back, what fell from his eyes?",
+        type: "mc",
+        options: ["Tears", "Something like scales", "A thin veil", "Bandages"],
+        correct: 1,
+        explain: "Scales. Luke is a doctor and uses a precise word. The physical healing mirrors what is happening in Saul's soul."
+      },
+      {
+        q: "What did Saul do right after his baptism?",
+        type: "mc",
+        options: [
+          "Traveled to Jerusalem",
+          "Preached Jesus in the synagogues",
+          "Sailed home to Tarsus",
+          "Fasted another forty days"
+        ],
+        correct: 1,
+        explain: "He went straight into the synagogues where he had planned to arrest believers, and preached the name he had come to destroy."
+      }
+    ]
+  },
+  {
+    title: "The Escape",
+    subtitle: "Cycle IV — Basket, Barnabas, Tarsus",
+    narrative:
+      "Saul's preaching enraged the Damascus Jews. They plotted to kill him and watched the gates day and night. So the disciples lowered him over the wall in a basket. He made it to Jerusalem, but the Christians there were afraid: was this a trick? Barnabas vouched for him. Soon new plots started, and the church shipped Saul off to Tarsus, his hometown. In Galatians 1, Paul adds a detail Luke skips: between Damascus and Jerusalem, he spent time in Arabia.",
+    scripture: {
+      text: "\u201CBut his disciples took him by night and let him down through an opening in the wall, lowering him in a basket.\u201D",
+      ref: "Acts 9:25"
+    },
+    fieldNote: {
+      label: "Field Note",
+      text: "The Greek word for basket here is spuris, a big woven hamper. It is the same word used for the seven baskets of leftovers after Jesus fed the four thousand. Saul, the great persecutor, escaped in a lunch basket."
+    },
+    questions: [
+      {
+        q: "How did Saul escape from Damascus?",
+        type: "mc",
+        options: [
+          "Disguised as a merchant",
+          "Through a secret tunnel",
+          "Lowered in a basket over the city wall",
+          "On a fast horse at dawn"
+        ],
+        correct: 2,
+        explain: "The mighty hunter of Christians makes his grand exit dangling over a wall in a woven basket. God has a sense of humor."
+      },
+      {
+        q: "Who stood up for Saul when the Jerusalem disciples did not trust him?",
+        type: "mc",
+        options: ["Peter", "James", "Ananias", "Barnabas"],
+        correct: 3,
+        explain: "Barnabas. His name means \u201Cson of encouragement,\u201D and he earns it. Without him, Saul might never have been received."
+      },
+      {
+        q: "Where did the church send Saul after Jerusalem got dangerous?",
+        type: "mc",
+        options: ["Antioch", "Tarsus", "Rome", "Caesarea"],
+        correct: 1,
+        explain: "Tarsus, his hometown. He disappears from the story for several years before Barnabas tracks him down again."
+      },
+      {
+        q: "True or False: According to Galatians 1, Saul went straight to Jerusalem after his conversion.",
+        type: "tf",
+        options: ["True", "False"],
+        correct: 1,
+        explain: "Galatians 1:17 says he first went to Arabia, then returned to Damascus. Only three years later did he head to Jerusalem."
+      }
+    ],
+    mapChallenge: true
+  }
+];
+
+/* Cities for map challenge. Coords are in a 0..100 viewBox. Sequence excludes the starting Jerusalem. */
+const MAP_CITIES = [
+  { id: "tarsus",     name: "TARSUS",     x: 28, y: 18 },
+  { id: "damascus",   name: "DAMASCUS",   x: 68, y: 38 },
+  { id: "jerusalem2", name: "JERUSALEM",  x: 55, y: 58 },
+  { id: "arabia",     name: "ARABIA",     x: 72, y: 78 }
+];
+const MAP_START = { id: "jerusalem1", name: "JERUSALEM (START)", x: 48, y: 55 };
+const MAP_CORRECT_ORDER = ["damascus", "arabia", "jerusalem2", "tarsus"];
+
+/* =========================================================
+   STATE
+   ========================================================= */
+const state = {
+  phase: "setup",          // setup | discovery | challenge | transition | final
+  players: [
+    { name: "", score: 0 },
+    { name: "", score: 0 },
+    { name: "", score: 0 }
+  ],
+  cycleIdx: 0,
+  questionIdx: 0,
+  questionAnswered: false,
+  lockAnswers: false,
+  awardedFor: null,        // current question has been awarded (stores index)
+  timer: null,
+  timerValue: 20,
+  mapPlaced: [],           // ids placed so far
+  mapEvaluated: false
+};
+
+/* =========================================================
+   DECORATIVE SVGs
+   ========================================================= */
+function compassSvg(size = 88) {
+  return `
+  <svg width="${size}" height="${size}" viewBox="0 0 100 100" aria-hidden="true">
+    <defs>
+      <radialGradient id="cg" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#f7e6b8"/>
+        <stop offset="100%" stop-color="#c9a34f"/>
+      </radialGradient>
+    </defs>
+    <circle cx="50" cy="50" r="46" fill="url(#cg)" stroke="#2b1d0e" stroke-width="1.4"/>
+    <circle cx="50" cy="50" r="38" fill="none" stroke="#2b1d0e" stroke-width="0.6" stroke-dasharray="2 3"/>
+    <g stroke="#2b1d0e" stroke-width="1" fill="#2b1d0e">
+      <polygon points="50,10 54,50 50,48 46,50" fill="#8b2c1a"/>
+      <polygon points="50,90 46,50 50,52 54,50" fill="#2b1d0e"/>
+      <polygon points="10,50 50,46 48,50 50,54" fill="#2b1d0e"/>
+      <polygon points="90,50 50,54 52,50 50,46" fill="#2b1d0e"/>
+    </g>
+    <circle cx="50" cy="50" r="3" fill="#2b1d0e"/>
+    <text x="50" y="22" text-anchor="middle" font-family="Cinzel, serif" font-size="8" font-weight="700" fill="#2b1d0e">N</text>
+    <text x="50" y="84" text-anchor="middle" font-family="Cinzel, serif" font-size="8" font-weight="700" fill="#2b1d0e">S</text>
+    <text x="18" y="53" text-anchor="middle" font-family="Cinzel, serif" font-size="8" font-weight="700" fill="#2b1d0e">W</text>
+    <text x="82" y="53" text-anchor="middle" font-family="Cinzel, serif" font-size="8" font-weight="700" fill="#2b1d0e">E</text>
+  </svg>`;
+}
+
+function pinSvg(size = 72) {
+  return `
+  <svg width="${size}" height="${size * 1.3}" viewBox="0 0 60 78" aria-hidden="true">
+    <defs>
+      <radialGradient id="pg" cx="50%" cy="40%" r="55%">
+        <stop offset="0%" stop-color="#e8c878"/>
+        <stop offset="60%" stop-color="#c9a34f"/>
+        <stop offset="100%" stop-color="#8b6a1f"/>
+      </radialGradient>
+    </defs>
+    <path d="M30 76 Q10 45 10 28 a20 20 0 0 1 40 0 Q50 45 30 76 Z" fill="#8b2c1a" stroke="#2b1d0e" stroke-width="1.5"/>
+    <circle cx="30" cy="28" r="11" fill="url(#pg)" stroke="#2b1d0e" stroke-width="1.2"/>
+    <circle cx="30" cy="28" r="4" fill="#2b1d0e"/>
+  </svg>`;
+}
+
+/* =========================================================
+   RENDERING
+   ========================================================= */
+const app = document.getElementById("app");
+
+function render() {
+  stopTimer();
+  const scoreHeader = state.phase === "setup" ? "" : renderScoreHeader();
+  let screen = "";
+  if (state.phase === "setup")       screen = renderSetup();
+  else if (state.phase === "discovery")  screen = renderDiscovery();
+  else if (state.phase === "challenge")  screen = renderChallenge();
+  else if (state.phase === "transition") screen = renderTransition();
+  else if (state.phase === "final")      screen = renderFinal();
+
+  app.innerHTML = scoreHeader + screen;
+  attachHandlers();
+}
+
+function renderScoreHeader() {
+  return `
+    <div class="score-header" id="score-header">
+      ${state.players.map((p, i) => `
+        <div class="score-card" data-score-idx="${i}">
+          <div class="name">${escapeHtml(p.name || "Player " + (i+1))}</div>
+          <div class="points">${p.score}</div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+/* ---------- SETUP ---------- */
+function renderSetup() {
+  return `
+    <div class="title-wrap animate-in">
+      <div class="tag">An Expedition Game</div>
+      <div class="compass">${compassSvg(100)}</div>
+      <h1>Saul's Journey</h1>
+      <div class="sub">Acts 8 · 9 · Galatians 1</div>
+    </div>
+
+    <div class="frame stagger">
+      <div class="eyebrow">Name Your Travelers</div>
+      <p style="font-style: italic; color: var(--ink-soft); margin-bottom: 18px;">
+        Three explorers will chase the story of a man who thought he was hunting God and discovered that God was hunting him.
+      </p>
+      <div class="field"><label for="p1">Traveler One</label><input id="p1" type="text" maxlength="14" placeholder="Enter name" autocomplete="off" /></div>
+      <div class="field"><label for="p2">Traveler Two</label><input id="p2" type="text" maxlength="14" placeholder="Enter name" autocomplete="off" /></div>
+      <div class="field"><label for="p3">Traveler Three</label><input id="p3" type="text" maxlength="14" placeholder="Enter name" autocomplete="off" /></div>
+
+      <div class="centered-actions">
+        <button id="start-btn" class="btn-gold">Begin the Journey</button>
+      </div>
+    </div>
+
+    <div class="divider"><span>✦</span></div>
+    <p style="text-align:center; font-family: var(--font-accent); letter-spacing: 0.25em; font-size: 0.8rem; color: var(--ink-soft);">FOUR STATIONS · ONE ROAD · ONE CHANGED MAN</p>
+  `;
+}
+
+/* ---------- DISCOVERY ---------- */
+function renderDiscovery() {
+  const c = CYCLES[state.cycleIdx];
+  return `
+    <div class="frame frame-corners-extra stagger">
+      <div class="discovery-hero">
+        <div class="cycle-num">${escapeHtml(c.subtitle)}</div>
+        <h2>${escapeHtml(c.title)}</h2>
+      </div>
+
+      <div class="divider"><span>✦ ✦ ✦</span></div>
+
+      <p class="narrative">${escapeHtml(c.narrative)}</p>
+
+      <div class="scripture">
+        ${escapeHtml(c.scripture.text)}
+        <span class="ref">${escapeHtml(c.scripture.ref)}</span>
+      </div>
+
+      <div class="field-note">
+        <span class="label">${escapeHtml(c.fieldNote.label)}</span>
+        ${escapeHtml(c.fieldNote.text)}
+      </div>
+
+      <div class="centered-actions">
+        <button id="discovery-continue" class="btn-gold">Proceed to Challenge →</button>
+      </div>
+    </div>
+  `;
+}
+
+/* ---------- CHALLENGE ---------- */
+function renderChallenge() {
+  const c = CYCLES[state.cycleIdx];
+  const questions = c.questions;
+  const isMapQuestion = c.mapChallenge && state.questionIdx === questions.length;
+
+  if (isMapQuestion) return renderMapChallenge();
+
+  const q = questions[state.questionIdx];
+  const total = questions.length + (c.mapChallenge ? 1 : 0);
+  const answered = state.questionAnswered;
+
+  const optsHtml = q.options.map((opt, i) => {
+    let cls = "answer-btn";
+    if (answered) {
+      if (i === q.correct) cls += " correct";
+      else if (state.lastPicked === i) cls += " wrong";
+    }
+    const letter = String.fromCharCode(65 + i);
+    return `
+      <button class="${cls}" data-answer="${i}" ${answered ? "disabled" : ""}>
+        <span class="letter">${letter}.</span>${escapeHtml(opt)}
+      </button>
+    `;
+  }).join("");
+
+  const awardHtml = answered ? `
+    <div class="explanation animate-in">${escapeHtml(q.explain)}</div>
+    <div class="award-panel animate-in">
+      <div class="label">Who answered correctly?</div>
+      <div class="award-grid">
+        ${state.players.map((p, i) => `
+          <button data-award="${i}" class="${state.awardedFor === i ? 'awarded' : ''}">${escapeHtml(p.name || "Player " + (i+1))}</button>
+        `).join("")}
+      </div>
+      <div style="margin-top: 12px; text-align: center;">
+        <button id="no-award" class="btn-ghost" style="font-size: 0.75rem; padding: 8px 14px; min-height: 36px;">No one got it</button>
+        <button id="next-q" class="btn-gold" style="font-size: 0.85rem;">Next →</button>
+      </div>
+    </div>
+  ` : "";
+
+  const timerCls = state.timerValue <= 5
+    ? "timer danger"
+    : state.timerValue <= 10
+      ? "timer warn"
+      : "timer";
+
+  return `
+    <div class="frame animate-in">
+      <div class="q-header">
+        <div class="meta">Cycle ${state.cycleIdx + 1} · ${escapeHtml(c.title)}</div>
+        <div class="stage">${state.questionIdx + 1} / ${total}</div>
+      </div>
+
+      <div class="question-text">${escapeHtml(q.q)}</div>
+
+      <div class="timer-label" id="timer-label">${answered ? "REVEALED" : state.timerValue + " SECONDS"}</div>
+      <div class="${timerCls}" id="timer">
+        <div class="timer-fill" id="timer-fill" style="width: ${(state.timerValue / 20) * 100}%;"></div>
+      </div>
+
+      <div class="answer-grid stagger">
+        ${optsHtml}
+      </div>
+
+      ${awardHtml}
+
+      ${!answered ? `<div style="text-align:center; margin-top: 8px;">
+        <button id="reveal-btn" class="btn-ghost" style="font-size: 0.75rem; padding: 8px 14px; min-height: 36px;">Reveal Answer</button>
+      </div>` : ""}
+    </div>
+  `;
+}
+
+/* ---------- MAP CHALLENGE ---------- */
+function renderMapChallenge() {
+  const placedIds = state.mapPlaced;
+  const evaluated = state.mapEvaluated;
+
+  const cityMarkers = MAP_CITIES.map(city => {
+    const idx = placedIds.indexOf(city.id);
+    const placed = idx !== -1;
+    let extraCls = placed ? "placed" : "";
+    return `
+      <g class="map-city ${extraCls}" data-city="${city.id}" transform="translate(${city.x}, ${city.y})">
+        <circle class="hit" r="14" fill="transparent"></circle>
+        <circle class="pin" r="9"></circle>
+        ${placed ? `<text class="order-num">${idx + 1}</text>` : ""}
+        <text x="0" y="-14" text-anchor="middle">${escapeHtml(city.name)}</text>
+      </g>
+    `;
+  }).join("");
+
+  const sequenceHtml = Array.from({ length: MAP_CORRECT_ORDER.length }, (_, i) => {
+    const id = placedIds[i];
+    const city = id ? MAP_CITIES.find(c => c.id === id) : null;
+    let cls = "slot";
+    if (city) cls += " filled";
+    if (evaluated && city) {
+      cls = "slot " + (id === MAP_CORRECT_ORDER[i] ? "correct" : "incorrect");
+    }
+    return `<div class="${cls}">${i + 1}. ${city ? escapeHtml(city.name) : "—"}</div>`;
+  }).join("");
+
+  const allPlaced = placedIds.length === MAP_CORRECT_ORDER.length;
+  const c = CYCLES[state.cycleIdx];
+  const total = c.questions.length + 1;
+
+  const correctCount = placedIds.filter((id, i) => id === MAP_CORRECT_ORDER[i]).length;
+  const resultMsg = evaluated ? `
+    <div class="explanation animate-in">
+      <strong>${correctCount} of ${MAP_CORRECT_ORDER.length} correct.</strong>
+      The full route: Jerusalem → Damascus → Arabia → Jerusalem (3 years later) → Tarsus. Paul spent time in Arabia between his conversion and his first Jerusalem visit (Galatians 1:17–18).
+    </div>
+  ` : "";
+
+  const awardHtml = evaluated ? `
+    <div class="award-panel animate-in">
+      <div class="label">Award the map challenge</div>
+      <div class="award-grid">
+        ${state.players.map((p, i) => `
+          <button data-award="${i}" class="${state.awardedFor === i ? 'awarded' : ''}">${escapeHtml(p.name || "Player " + (i+1))}</button>
+        `).join("")}
+      </div>
+      <div style="margin-top: 12px; text-align: center;">
+        <button id="no-award" class="btn-ghost" style="font-size: 0.75rem; padding: 8px 14px; min-height: 36px;">No one got it</button>
+        <button id="finish-cycle" class="btn-gold" style="font-size: 0.85rem;">Finish Cycle →</button>
+      </div>
+    </div>
+  ` : "";
+
+  return `
+    <div class="frame animate-in">
+      <div class="q-header">
+        <div class="meta">Map Challenge · The Full Route</div>
+        <div class="stage">${total} / ${total}</div>
+      </div>
+      <div class="question-text">Tap the cities in the order Saul visited them after his conversion. Jerusalem is the starting point.</div>
+
+      <div class="map-challenge">
+        <div class="map-board">
+          <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+            <!-- Decorative map elements -->
+            <g opacity="0.35" stroke="#5a3a18" stroke-width="0.2" fill="none">
+              <path d="M5 20 Q 30 25, 55 15 T 95 25" />
+              <path d="M10 70 Q 40 65, 65 75 T 98 70" />
+              <path d="M20 40 Q 50 35, 80 45" />
+            </g>
+            <text x="12" y="8" font-family="IM Fell English SC, serif" font-size="3.5" fill="#8b4513" letter-spacing="0.8">ASIA MINOR</text>
+            <text x="72" y="96" font-family="IM Fell English SC, serif" font-size="3.5" fill="#8b4513" letter-spacing="0.8">NABATEA</text>
+            <text x="40" y="96" font-family="IM Fell English SC, serif" font-size="2.8" fill="#8b4513" letter-spacing="0.6" font-style="italic">. . . desert . . .</text>
+
+            <!-- Fixed start city -->
+            <g class="map-city start" transform="translate(${MAP_START.x}, ${MAP_START.y})">
+              <circle class="hit" r="14" fill="transparent"></circle>
+              <circle class="pin" r="10"></circle>
+              <text class="order-num">★</text>
+              <text x="0" y="-15" text-anchor="middle">JERUSALEM · START</text>
+            </g>
+
+            <!-- Selectable cities -->
+            ${cityMarkers}
+          </svg>
+        </div>
+        <div class="map-instructions">TAP A CITY TO PLACE IT IN THE SEQUENCE</div>
+        <div class="map-sequence">${sequenceHtml}</div>
+        <div class="map-actions">
+          <button id="map-reset" class="btn-ghost" style="font-size: 0.75rem; padding: 10px 14px;">Reset</button>
+          <button id="map-check" class="btn-gold" style="font-size: 0.85rem;" ${allPlaced && !evaluated ? "" : "disabled"}>Check Route</button>
+        </div>
+        ${resultMsg}
+        ${awardHtml}
+      </div>
+    </div>
+  `;
+}
+
+/* ---------- TRANSITION ---------- */
+function renderTransition() {
+  const labels = ["Damascus Road", "The City Walls", "Over the Wall", "Tarsus and Beyond"];
+  const next = CYCLES[state.cycleIdx + 1];
+  const label = labels[state.cycleIdx] || "The Road Ahead";
+  const subtitle = next ? next.title + " begins..." : "";
+
+  return `
+    <div class="frame checkpoint">
+      <div class="banner">Checkpoint Reached</div>
+      <h2>${escapeHtml(label)}</h2>
+      <div class="subtitle">${escapeHtml(subtitle)}</div>
+      <div class="pin-drop">${pinSvg(84)}</div>
+      <div class="checkpoint-actions">
+        <button id="transition-continue" class="btn-gold">Continue the Journey →</button>
+      </div>
+    </div>
+  `;
+}
+
+/* ---------- FINAL ---------- */
+function renderFinal() {
+  const sorted = state.players
+    .map((p, i) => ({ ...p, idx: i }))
+    .sort((a, b) => b.score - a.score);
+
+  // Assign medals (handle ties by position order, simple approach)
+  const first  = sorted[0];
+  const second = sorted[1];
+  const third  = sorted[2];
+
+  const spot = (p, medalClass, medalText, blockClass, blockText) => `
+    <div class="podium-spot">
+      <div class="medal ${medalClass}">${medalText}</div>
+      <div class="player-name">${escapeHtml(p.name || "Traveler")}</div>
+      <div class="player-score">${p.score} pts</div>
+      <div class="podium-block ${blockClass}">${blockText}</div>
+    </div>
+  `;
+
+  return `
+    <div class="podium-wrap animate-in">
+      <div class="eyebrow">Expedition Complete</div>
+      <h2>The Journey's End</h2>
+      <p style="font-family: var(--font-body); font-style: italic; color: var(--ink-soft); margin-bottom: 26px;">
+        From Jerusalem to Damascus, to Arabia, and on to Tarsus. You followed the road of a changed man.
+      </p>
+
+      <div class="podium">
+        ${spot(second, "silver", "II", "second", "2ND")}
+        ${spot(first, "gold", "I", "first", "1ST")}
+        ${spot(third, "bronze", "III", "third", "3RD")}
+      </div>
+
+      <div class="scripture" style="max-width: 560px; margin: 20px auto;">
+        \u201CBut I do not count my life of any value nor as precious to myself, if only I may finish my course and the ministry that I received from the Lord Jesus, to testify to the gospel of the grace of God.\u201D
+        <span class="ref">Acts 20:24</span>
+      </div>
+
+      <div class="centered-actions" style="margin-top: 26px;">
+        <button id="play-again" class="btn-gold">Play Again</button>
+      </div>
+    </div>
+  `;
+}
+
+/* =========================================================
+   HANDLERS
+   ========================================================= */
+function attachHandlers() {
+  if (state.phase === "setup") {
+    document.getElementById("start-btn").addEventListener("click", handleStart);
+    // Enter key advances focus
+    ["p1","p2","p3"].forEach((id, i) => {
+      const el = document.getElementById(id);
+      el.addEventListener("keydown", e => {
+        if (e.key === "Enter") {
+          if (i < 2) document.getElementById("p" + (i+2)).focus();
+          else handleStart();
+        }
+      });
+    });
+  }
+  else if (state.phase === "discovery") {
+    document.getElementById("discovery-continue").addEventListener("click", handleDiscoveryContinue);
+  }
+  else if (state.phase === "challenge") {
+    const c = CYCLES[state.cycleIdx];
+    const isMap = c.mapChallenge && state.questionIdx === c.questions.length;
+    if (isMap) {
+      document.querySelectorAll("[data-city]").forEach(g => {
+        g.addEventListener("click", () => handleCityTap(g.dataset.city));
+      });
+      const reset = document.getElementById("map-reset");
+      const check = document.getElementById("map-check");
+      if (reset) reset.addEventListener("click", handleMapReset);
+      if (check) check.addEventListener("click", handleMapCheck);
+      const finish = document.getElementById("finish-cycle");
+      if (finish) finish.addEventListener("click", handleFinishCycle);
+    } else {
+      document.querySelectorAll("[data-answer]").forEach(b => {
+        b.addEventListener("click", () => handleAnswer(parseInt(b.dataset.answer, 10)));
+      });
+      const revealBtn = document.getElementById("reveal-btn");
+      if (revealBtn) revealBtn.addEventListener("click", () => revealAnswer(null));
+      const nextBtn = document.getElementById("next-q");
+      if (nextBtn) nextBtn.addEventListener("click", handleNextQuestion);
+
+      if (!state.questionAnswered) startTimer();
+    }
+
+    document.querySelectorAll("[data-award]").forEach(b => {
+      b.addEventListener("click", () => handleAward(parseInt(b.dataset.award, 10)));
+    });
+    const noAward = document.getElementById("no-award");
+    if (noAward) noAward.addEventListener("click", () => {
+      state.awardedFor = -1;
+      render();
+    });
+  }
+  else if (state.phase === "transition") {
+    document.getElementById("transition-continue").addEventListener("click", handleTransitionContinue);
+  }
+  else if (state.phase === "final") {
+    document.getElementById("play-again").addEventListener("click", handlePlayAgain);
+  }
+}
+
+function handleStart() {
+  const names = ["p1","p2","p3"].map(id => (document.getElementById(id).value || "").trim());
+  if (names.some(n => !n)) {
+    alert("Each traveler needs a name before you set out.");
+    return;
+  }
+  state.players = names.map(n => ({ name: n, score: 0 }));
+  state.phase = "discovery";
+  state.cycleIdx = 0;
+  render();
+}
+
+function handleDiscoveryContinue() {
+  state.phase = "challenge";
+  state.questionIdx = 0;
+  state.questionAnswered = false;
+  state.awardedFor = null;
+  state.lastPicked = null;
+  state.mapPlaced = [];
+  state.mapEvaluated = false;
+  render();
+}
+
+function handleAnswer(idx) {
+  if (state.questionAnswered) return;
+  revealAnswer(idx);
+}
+
+function revealAnswer(pickedIdx) {
+  stopTimer();
+  state.questionAnswered = true;
+  state.lastPicked = pickedIdx;
+  render();
+}
+
+function handleAward(idx) {
+  state.players[idx].score += 1;
+  state.awardedFor = idx;
+  render();
+  // Flash the just-awarded card
+  requestAnimationFrame(() => {
+    const card = document.querySelector(`[data-score-idx="${idx}"]`);
+    if (card) {
+      card.classList.remove("flash");
+      // Force reflow to restart animation
+      void card.offsetWidth;
+      card.classList.add("flash");
+    }
+  });
+}
+
+function handleNextQuestion() {
+  const c = CYCLES[state.cycleIdx];
+  state.questionIdx += 1;
+  state.questionAnswered = false;
+  state.awardedFor = null;
+  state.lastPicked = null;
+
+  const totalQs = c.questions.length;
+  const isMapNext = c.mapChallenge && state.questionIdx === totalQs;
+  const pastEnd = state.questionIdx > totalQs || (!c.mapChallenge && state.questionIdx >= totalQs);
+
+  if (pastEnd) {
+    afterCycle();
+    return;
+  }
+  render();
+}
+
+function handleFinishCycle() {
+  afterCycle();
+}
+
+function afterCycle() {
+  if (state.cycleIdx < CYCLES.length - 1) {
+    state.phase = "transition";
+    render();
+  } else {
+    state.phase = "final";
+    render();
+  }
+}
+
+function handleTransitionContinue() {
+  state.cycleIdx += 1;
+  state.phase = "discovery";
+  render();
+}
+
+function handlePlayAgain() {
+  state.phase = "setup";
+  state.players = [{ name: "", score: 0 }, { name: "", score: 0 }, { name: "", score: 0 }];
+  state.cycleIdx = 0;
+  state.questionIdx = 0;
+  state.questionAnswered = false;
+  state.awardedFor = null;
+  state.lastPicked = null;
+  state.mapPlaced = [];
+  state.mapEvaluated = false;
+  render();
+}
+
+/* ---------- MAP HANDLERS ---------- */
+function handleCityTap(cityId) {
+  if (state.mapEvaluated) return;
+  if (state.mapPlaced.includes(cityId)) return;
+  if (state.mapPlaced.length >= MAP_CORRECT_ORDER.length) return;
+  state.mapPlaced.push(cityId);
+  render();
+}
+
+function handleMapReset() {
+  state.mapPlaced = [];
+  state.mapEvaluated = false;
+  state.awardedFor = null;
+  render();
+}
+
+function handleMapCheck() {
+  state.mapEvaluated = true;
+  render();
+}
+
+/* =========================================================
+   TIMER
+   ========================================================= */
+function startTimer() {
+  stopTimer();
+  state.timerValue = 20;
+  const fill = document.getElementById("timer-fill");
+  const wrap = document.getElementById("timer");
+  const label = document.getElementById("timer-label");
+  if (!fill || !wrap) return;
+
+  const start = performance.now();
+  const duration = 20000;
+
+  function tick(now) {
+    const elapsed = now - start;
+    const remaining = Math.max(0, duration - elapsed);
+    const seconds = Math.ceil(remaining / 1000);
+    state.timerValue = seconds;
+    const pct = (remaining / duration) * 100;
+    fill.style.width = pct + "%";
+
+    if (seconds <= 5) {
+      wrap.classList.remove("warn");
+      wrap.classList.add("danger");
+    } else if (seconds <= 10) {
+      wrap.classList.add("warn");
+      wrap.classList.remove("danger");
+    } else {
+      wrap.classList.remove("warn");
+      wrap.classList.remove("danger");
+    }
+
+    if (label) label.textContent = state.questionAnswered ? "REVEALED" : seconds + " SECONDS";
+
+    if (remaining > 0 && !state.questionAnswered) {
+      state.timer = requestAnimationFrame(tick);
+    } else if (remaining <= 0 && !state.questionAnswered) {
+      revealAnswer(null);
+    }
+  }
+  state.timer = requestAnimationFrame(tick);
+}
+
+function stopTimer() {
+  if (state.timer) {
+    cancelAnimationFrame(state.timer);
+    state.timer = null;
+  }
+}
+
+/* =========================================================
+   UTILITIES
+   ========================================================= */
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/* =========================================================
+   BOOT
+   ========================================================= */
+render();
+</script>
+</body>
+</html>
