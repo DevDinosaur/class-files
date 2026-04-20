@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>The Road to Damascus — Classroom Game</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f4f0;color:#1a1a18;min-height:100vh;padding:1rem}
+.game{max-width:680px;margin:0 auto}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;gap:8px}
+.title-bar{font-size:13px;font-weight:500;color:#888780;white-space:nowrap}
+.scores{display:flex;gap:8px;flex:1;justify-content:flex-end}
+.score-card{background:#fff;border:0.5px solid rgba(0,0,0,0.12);border-radius:8px;padding:6px 12px;text-align:center;cursor:pointer;min-width:80px;transition:transform 0.1s}
+.score-card:active{transform:scale(0.96)}
+.score-card .pname{font-size:11px;color:#888780;margin-bottom:2px}
+.score-card .pts{font-size:18px;font-weight:500;color:#1a1a18}
+.score-card.flash{background:#C0DD97;border-color:#639922}
+.progress-bar{height:4px;background:#e0dfd8;border-radius:2px;margin-bottom:1rem;overflow:hidden}
+.progress-fill{height:4px;background:#1D9E75;border-radius:2px;transition:width 0.4s}
+.card{background:#fff;border:0.5px solid rgba(0,0,0,0.12);border-radius:12px;padding:1.25rem;margin-bottom:1rem}
+.round-label{font-size:11px;font-weight:500;color:#888780;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px}
+.story-title{font-size:20px;font-weight:500;color:#1a1a18;margin-bottom:12px}
+.story-body{font-size:15px;line-height:1.7;color:#5F5E5A;margin-bottom:1rem}
+.story-body strong{color:#1a1a18;font-weight:500}
+.verse-box{background:#f5f4f0;border-left:3px solid #1D9E75;border-radius:0 8px 8px 0;padding:10px 14px;margin:12px 0;font-size:14px;color:#5F5E5A;line-height:1.6}
+.q-text{font-size:17px;font-weight:500;color:#1a1a18;margin-bottom:16px;line-height:1.5}
+.options{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1rem}
+.opt{background:#f5f4f0;border:0.5px solid rgba(0,0,0,0.12);border-radius:8px;padding:10px 14px;font-size:14px;color:#1a1a18;cursor:pointer;transition:background 0.15s;text-align:left;line-height:1.4}
+.opt:hover{background:#e8e7e0}
+.opt.correct{background:#EAF3DE;border-color:#639922;color:#27500A}
+.opt.wrong{background:#FCEBEB;border-color:#A32D2D;color:#501313}
+.opt.revealed{pointer-events:none}
+.feedback{font-size:14px;padding:10px 14px;border-radius:8px;margin-bottom:12px;line-height:1.5}
+.feedback.correct-fb{background:#EAF3DE;color:#27500A}
+.feedback.wrong-fb{background:#FCEBEB;color:#501313}
+.map-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1rem}
+.city-btn{background:#f5f4f0;border:0.5px solid rgba(0,0,0,0.12);border-radius:8px;padding:10px;font-size:14px;cursor:pointer;text-align:center;transition:all 0.15s}
+.city-btn:hover{background:#e8e7e0}
+.city-btn.placed{background:#E1F5EE;border-color:#1D9E75;color:#085041;pointer-events:none}
+.city-btn.wrong-place{background:#FCEBEB;border-color:#A32D2D}
+.route-display{display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:12px;min-height:36px;padding:8px;background:#f5f4f0;border-radius:8px;border:0.5px solid rgba(0,0,0,0.12)}
+.route-city{font-size:13px;font-weight:500;padding:4px 8px;background:#fff;border:0.5px solid rgba(0,0,0,0.15);border-radius:8px;color:#1a1a18}
+.arrow{font-size:12px;color:#B4B2A9}
+.btn{background:#fff;border:0.5px solid rgba(0,0,0,0.2);border-radius:8px;padding:9px 18px;font-size:14px;cursor:pointer;transition:all 0.15s;color:#1a1a18}
+.btn:hover{background:#f5f4f0}
+.btn-primary{background:#1D9E75;border-color:#0F6E56;color:#fff}
+.btn-primary:hover{background:#0F6E56}
+.actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.award-row{display:flex;gap:8px;justify-content:center;margin-bottom:8px}
+.award-btn{background:#f5f4f0;border:0.5px solid rgba(0,0,0,0.12);border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer;transition:all 0.15s}
+.award-btn:hover{background:#C0DD97;border-color:#639922}
+.award-hint{font-size:12px;color:#888780;text-align:center;margin-bottom:12px}
+.final-scores{display:flex;gap:16px;justify-content:center;margin:1.5rem 0;flex-wrap:wrap}
+.final-card{text-align:center;background:#f5f4f0;border:0.5px solid rgba(0,0,0,0.12);border-radius:12px;padding:1rem 1.5rem}
+.final-card .rank{font-size:24px;margin-bottom:4px}
+.final-card .fname{font-size:15px;font-weight:500;margin-bottom:4px}
+.final-card .fpts{font-size:22px;font-weight:500;color:#1D9E75}
+.winner-card{border-color:#1D9E75;background:#E1F5EE}
+.timer-row{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.timer-label{font-size:12px;color:#888780}
+.timer-val{font-size:16px;font-weight:500;color:#1a1a18;min-width:24px}
+.timer-bar{flex:1;height:6px;background:#e0dfd8;border-radius:3px;overflow:hidden}
+.timer-fill{height:6px;border-radius:3px;background:#1D9E75;transition:width 0.1s linear}
+.timer-fill.warning{background:#EF9F27}
+.timer-fill.urgent{background:#E24B4A}
+.intro-card{text-align:center;padding:2rem 1.5rem}
+.intro-title{font-size:26px;font-weight:500;margin-bottom:8px;color:#1a1a18}
+.intro-sub{font-size:15px;color:#888780;margin-bottom:1.5rem;line-height:1.6}
+.name-inputs{display:flex;gap:8px;margin-bottom:1.5rem;justify-content:center;flex-wrap:wrap}
+.name-inp{border:0.5px solid rgba(0,0,0,0.2);border-radius:8px;padding:8px 12px;font-size:14px;width:130px;background:#fff;color:#1a1a18}
+</style>
+</head>
+<body>
+<div class="game">
+
+<div id="intro-screen">
+  <div class="card intro-card">
+    <div class="intro-title">The Road to Damascus</div>
+    <div class="intro-sub">NT Geography · Lesson 7<br>Enter player names, then tap Start.</div>
+    <div class="name-inputs">
+      <input class="name-inp" id="p1" placeholder="Player 1" maxlength="12" value="Player 1"/>
+      <input class="name-inp" id="p2" placeholder="Player 2" maxlength="12" value="Player 2"/>
+      <input class="name-inp" id="p3" placeholder="Player 3" maxlength="12" value="Player 3"/>
+    </div>
+    <button class="btn btn-primary" onclick="startGame()">Start game</button>
+  </div>
+</div>
+
+<div id="game-screen" style="display:none">
+  <div class="header">
+    <span class="title-bar">Road to Damascus</span>
+    <div class="scores" id="scoreboard"></div>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="prog"></div></div>
+  <div id="main-area"></div>
+</div>
+
+<div id="final-screen" style="display:none">
+  <div class="card" style="text-align:center;padding:1.5rem">
+    <div style="font-size:22px;font-weight:500;margin-bottom:4px;color:#1a1a18">Game over</div>
+    <div style="font-size:14px;color:#888780;margin-bottom:1.5rem">Final scores — Road to Damascus</div>
+    <div class="final-scores" id="final-scores"></div>
+    <button class="btn btn-primary" onclick="location.reload()">Play again</button>
+  </div>
+</div>
+
+</div>
+<script>
+var players, scores, step, timerInterval, timeLeft, maxTime;
+
+var ROUNDS = [
+  {type:'story', round:'Round 1 of 7', title:'The hunter', body:'Before we meet the Saul everyone loves, we have to meet the Saul everyone feared. He was a Pharisee — brilliantly educated, trained in Jerusalem under one of the most respected rabbis of the day. He was completely convinced that followers of Jesus were a dangerous heresy. And he did something about it.', verse:'"As for Saul, he made havoc of the church, entering every house, and dragging off men and women, committing them to prison." — Acts 8:3', tip:'That word <strong>havoc</strong> is the same Greek word used for a wild animal tearing apart its prey.'},
+  {type:'question', round:'Round 1 of 7 — Question', q:'What does Acts 8:3 say Saul made of the church?', opts:['Peace with it','Havoc of it','Friends within it','Deals with it'], correct:1, feedback:'Correct! The Greek word is devastating — it pictures a wild animal tearing something apart. That\'s who Saul was before the road.'},
+  {type:'story', round:'Round 2 of 7', title:'The road', body:'Saul wasn\'t satisfied with just Jerusalem. He got letters from the high priest giving him authority to travel 135 miles north to Damascus and arrest Christians there too. He was heading up the King\'s Highway — and he never made it. At midday, near Damascus, a light brighter than the sun knocked him to the ground.', verse:'"Saul, Saul, why are you persecuting me?" ... "I am Jesus, whom you are persecuting." — Acts 9:4–5', tip:'The men with him heard a sound but saw no one. Saul opened his eyes and couldn\'t see a thing.'},
+  {type:'question', round:'Round 2 of 7 — Question', q:'Where was Saul headed when the vision happened?', opts:['Joppa','Jerusalem','Damascus','Antioch'], correct:2, feedback:'Damascus — about 135 miles north of Jerusalem. He was on a mission to arrest Christians there under authority from the high priest.'},
+  {type:'story', round:'Round 3 of 7', title:'Three days in the dark', body:'Saul\'s companions led him by the hand into Damascus. He sat on a street called Straight Street — a real road that ran east to west across the city, wide enough for chariots. For three days he couldn\'t see. He ate and drank nothing. Just sat there in the dark on that street.', verse:'"And he was three days without sight, and neither ate nor drank." — Acts 9:9', tip:'Damascus is one of the oldest continually inhabited cities in the world. Straight Street is still there today.'},
+  {type:'question', round:'Round 3 of 7 — Question', q:'How long was Saul blind in Damascus?', opts:['One day','Three days','Seven days','Forty days'], correct:1, feedback:'Three days — no food, no water, no sight. Imagine what was going through his mind during those three days.'},
+  {type:'story', round:'Round 4 of 7', title:'Ananias', body:'God told a disciple in Damascus named Ananias to go find Saul and restore his sight. Ananias basically said: "Lord, I\'ve heard about this guy. He\'s here to arrest us." God\'s response: go anyway — Saul is my chosen instrument. Ananias went. He laid hands on Saul, something like scales fell from Saul\'s eyes, and Saul could see. He was baptized that same day.', verse:'"He is a chosen instrument of mine to carry my name before the Gentiles and kings and the children of Israel." — Acts 9:15', tip:'Ananias\'s willingness to obey when it was genuinely scary is one of the underrated moments in Acts.'},
+  {type:'question', round:'Round 4 of 7 — Question', q:'What was Ananias\'s first reaction when God told him to find Saul?', opts:['He went immediately','He was excited','He pushed back with fear','He sent a letter instead'], correct:2, feedback:'He pushed back! He told God exactly why this seemed like a terrible idea. But he went anyway. That matters.'},
+  {type:'map', round:'Round 5 of 7 — Map Challenge', title:'Trace the route', intro:'Put Saul\'s stops in the right order by tapping them one at a time.', cities:['Tarsus','Caesarea','Jerusalem','Damascus'], correct_order:['Jerusalem','Damascus','Caesarea','Tarsus'], feedback:'Jerusalem → Damascus (conversion) → back toward Jerusalem → Caesarea → Tarsus (hometown). Saul was sent there after another plot to kill him.'},
+  {type:'story', round:'Round 6 of 7', title:'The basket', body:'After Saul started preaching in Damascus, the Jews were furious. They watched the city gates day and night to kill him. But the disciples hatched a plan. At night, they put Saul in a large basket and lowered him down from a window in the city wall. The most dangerous man in the early church escaped in a laundry basket.', verse:'"Through a window in the wall his disciples let him down in a basket." — Acts 9:25', tip:'2 Corinthians 11:32 adds that the governor under King Aretas was also involved in the plot — not just the Jews.'},
+  {type:'question', round:'Round 6 of 7 — Question', q:'How did Saul escape from Damascus?', opts:['He disguised himself','He fought his way out','He was lowered over the wall in a basket','He hid inside a supply cart'], correct:2, feedback:'A basket! Over the wall. At night. It\'s one of the most memorable escape stories in the New Testament.'},
+  {type:'story', round:'Round 7 of 7', title:'Nobody believes him', body:'Saul went to Jerusalem and tried to join the disciples. Nobody believed he was a Christian — they were terrified. This is the man who had been arresting them. One person stepped up: Barnabas. He took Saul to the apostles and told them the whole story. They accepted him. But then another plot formed, and the brethren sent Saul away to Tarsus — his hometown. He went quiet for a while. But his story was far from over.', verse:'"Barnabas took him and brought him to the apostles." — Acts 9:27', tip:'Barnabas means "son of encouragement." He lived up to his name here.'},
+  {type:'question', round:'Round 7 of 7 — Question', q:'Who vouched for Saul in Jerusalem when everyone was afraid of him?', opts:['Peter','Barnabas','John','James'], correct:1, feedback:'Barnabas — "son of encouragement." Without him stepping up in that moment, Saul might never have been accepted by the Jerusalem church.'},
+];
+
+function startGame(){
+  players=[
+    document.getElementById('p1').value||'Player 1',
+    document.getElementById('p2').value||'Player 2',
+    document.getElementById('p3').value||'Player 3'
+  ];
+  scores=[0,0,0];
+  step=0;
+  document.getElementById('intro-screen').style.display='none';
+  document.getElementById('game-screen').style.display='block';
+  renderScores();
+  showStep();
+}
+
+function renderScores(){
+  var sb=document.getElementById('scoreboard');
+  sb.innerHTML='';
+  players.forEach(function(p,i){
+    var d=document.createElement('div');
+    d.className='score-card';
+    d.id='sc'+i;
+    d.innerHTML='<div class="pname">'+p+'</div><div class="pts" id="pts'+i+'">'+scores[i]+'</div>';
+    sb.appendChild(d);
+  });
+}
+
+function awardPoint(i){
+  scores[i]++;
+  document.getElementById('pts'+i).textContent=scores[i];
+  var card=document.getElementById('sc'+i);
+  card.classList.add('flash');
+  setTimeout(function(){card.classList.remove('flash')},600);
+}
+
+function showStep(){
+  if(step>=ROUNDS.length){showFinal();return;}
+  var total=ROUNDS.length;
+  document.getElementById('prog').style.width=(step/total*100)+'%';
+  var r=ROUNDS[step];
+  if(r.type==='story') renderStory(r);
+  else if(r.type==='question') renderQuestion(r);
+  else if(r.type==='map') renderMap(r);
+}
+
+function renderStory(r){
+  var html='<div class="card">';
+  html+='<div class="round-label">'+r.round+'</div>';
+  html+='<div class="story-title">'+r.title+'</div>';
+  html+='<div class="story-body">'+r.body+'</div>';
+  if(r.verse) html+='<div class="verse-box">'+r.verse+'</div>';
+  if(r.tip) html+='<div class="story-body" style="font-size:13px;margin-top:8px;padding-top:8px;border-top:0.5px solid rgba(0,0,0,0.1)">'+r.tip+'</div>';
+  html+='</div>';
+  html+='<div class="actions"><button class="btn btn-primary" onclick="nextStep()">Continue &#x2192;</button></div>';
+  document.getElementById('main-area').innerHTML=html;
+  clearInterval(timerInterval);
+}
+
+function renderQuestion(r){
+  maxTime=20;timeLeft=20;
+  var html='<div class="card">';
+  html+='<div class="round-label">'+r.round+'</div>';
+  html+='<div class="timer-row"><span class="timer-label">Time</span><span class="timer-val" id="tval">20</span><div class="timer-bar"><div class="timer-fill" id="tfill" style="width:100%"></div></div></div>';
+  html+='<div class="q-text">'+r.q+'</div>';
+  html+='<div class="options" id="opts">';
+  r.opts.forEach(function(o,i){
+    html+='<button class="opt" onclick="checkAnswer('+i+','+r.correct+')">'+String.fromCharCode(65+i)+'. '+o+'</button>';
+  });
+  html+='</div>';
+  html+='<div id="fb-area"></div>';
+  html+='<div id="award-area" style="display:none">';
+  html+='<div class="award-hint">Who answered correctly? Tap their name to award a point.</div>';
+  html+='<div class="award-row" id="award-btns"></div>';
+  html+='</div>';
+  html+='</div>';
+  html+='<div class="actions"><button class="btn" id="skip-btn" onclick="revealAnswer('+r.correct+',\''+encodeURIComponent(r.feedback)+'\')">Reveal answer</button><button class="btn btn-primary" id="next-btn" style="display:none" onclick="nextStep()">Next round &#x2192;</button></div>';
+  document.getElementById('main-area').innerHTML=html;
+  startTimer(r.correct,r.feedback);
+}
+
+function startTimer(correct,feedback){
+  timerInterval=setInterval(function(){
+    timeLeft--;
+    var pct=timeLeft/maxTime*100;
+    document.getElementById('tval').textContent=timeLeft;
+    var fill=document.getElementById('tfill');
+    if(fill){
+      fill.style.width=pct+'%';
+      fill.className='timer-fill'+(timeLeft<=5?' urgent':timeLeft<=10?' warning':'');
+    }
+    if(timeLeft<=0){clearInterval(timerInterval);revealAnswer(correct,feedback);}
+  },1000);
+}
+
+function checkAnswer(chosen,correct){
+  clearInterval(timerInterval);
+  revealAnswer(correct,ROUNDS[step].feedback,chosen);
+}
+
+function revealAnswer(correct,feedback,chosen){
+  clearInterval(timerInterval);
+  if(typeof feedback==='string'&&feedback.indexOf('%')===0) feedback=decodeURIComponent(feedback);
+  var opts=document.querySelectorAll('.opt');
+  opts.forEach(function(o,i){
+    o.classList.add('revealed');
+    if(i===correct) o.classList.add('correct');
+    else if(chosen!==undefined&&i===chosen) o.classList.add('wrong');
+  });
+  var fb=document.getElementById('fb-area');
+  var isRight=(chosen===correct);
+  if(fb) fb.innerHTML='<div class="feedback '+(isRight?'correct-fb':'wrong-fb')+'">'+(isRight?'Correct! ':'Not quite. ')+ROUNDS[step].feedback+'</div>';
+  var skipBtn=document.getElementById('skip-btn');
+  var nextBtn=document.getElementById('next-btn');
+  if(skipBtn) skipBtn.style.display='none';
+  if(nextBtn) nextBtn.style.display='inline-block';
+  var awardArea=document.getElementById('award-area');
+  var awardBtns=document.getElementById('award-btns');
+  if(awardArea&&awardBtns){
+    awardArea.style.display='block';
+    awardBtns.innerHTML='';
+    players.forEach(function(p,i){
+      var b=document.createElement('button');
+      b.className='award-btn';
+      b.textContent='+1 to '+p;
+      b.onclick=function(){awardPoint(i);awardArea.style.display='none';};
+      awardBtns.appendChild(b);
+    });
+  }
+}
+
+function renderMap(r){
+  var placed=[];
+  var shuffled=r.cities.slice().sort(function(){return Math.random()-0.5});
+  function render(){
+    var html='<div class="card">';
+    html+='<div class="round-label">'+r.round+'</div>';
+    html+='<div class="story-title">'+r.title+'</div>';
+    html+='<div class="story-body" style="font-size:14px;margin-bottom:12px">'+r.intro+'</div>';
+    html+='<div class="route-display" id="route-disp">';
+    if(placed.length===0) html+='<span style="font-size:12px;color:#B4B2A9">Tap cities below in order...</span>';
+    placed.forEach(function(c,i){
+      if(i>0) html+='<span class="arrow">&#x2192;</span>';
+      html+='<span class="route-city">'+c+'</span>';
+    });
+    html+='</div>';
+    html+='<div class="map-grid" id="city-grid">';
+    shuffled.forEach(function(c){
+      var isPlaced=placed.indexOf(c)>-1;
+      html+='<button class="city-btn'+(isPlaced?' placed':'')+'" onclick="placeCity(\''+c+'\')"'+(isPlaced?' disabled':'')+'>'+c+'</button>';
+    });
+    html+='</div>';
+    html+='<div id="map-fb"></div>';
+    html+='</div>';
+    html+='<div class="actions"><button class="btn" onclick="resetMap()">Reset</button><button class="btn btn-primary" id="check-map" onclick="checkMap()" style="'+(placed.length<r.correct_order.length?'display:none':'')+'">Check route</button></div>';
+    document.getElementById('main-area').innerHTML=html;
+  }
+  window.placeCity=function(c){
+    placed.push(c);
+    render();
+    if(placed.length===r.correct_order.length) document.getElementById('check-map').style.display='inline-block';
+  };
+  window.resetMap=function(){placed=[];render();};
+  window.checkMap=function(){
+    var correct=JSON.stringify(placed)===JSON.stringify(r.correct_order);
+    var fb=document.getElementById('map-fb');
+    if(correct){
+      var awardArea='<div style="margin-top:8px"><div class="award-hint">Award a point for the correct route:</div><div class="award-row">';
+      players.forEach(function(p,i){awardArea+='<button class="award-btn" onclick="awardPoint('+i+');this.parentElement.parentElement.style.display=\'none\'">+1 to '+p+'</button>';});
+      awardArea+='</div></div>';
+      fb.innerHTML='<div class="feedback correct-fb">Perfect route! '+r.feedback+'</div>'+awardArea;
+    } else {
+      fb.innerHTML='<div class="feedback wrong-fb">Not quite — try again or tap Reset. Remember: where did the story start?</div>';
+    }
+    document.getElementById('check-map').style.display='none';
+    document.getElementById('main-area').querySelector('.actions').innerHTML+='<button class="btn btn-primary" onclick="nextStep()">Next round &#x2192;</button>';
+  };
+  render();
+}
+
+function nextStep(){step++;showStep();}
+
+function showFinal(){
+  document.getElementById('game-screen').style.display='none';
+  document.getElementById('final-screen').style.display='block';
+  var ranked=players.map(function(p,i){return{name:p,score:scores[i]};}).sort(function(a,b){return b.score-a.score;});
+  var medals=['&#x1F947;','&#x1F948;','&#x1F949;'];
+  var html='';
+  ranked.forEach(function(p,i){
+    html+='<div class="final-card'+(i===0?' winner-card':'')+'"><div class="rank">'+medals[i]+'</div><div class="fname">'+p.name+'</div><div class="fpts">'+p.score+' pts</div></div>';
+  });
+  document.getElementById('final-scores').innerHTML=html;
+}
+</script>
+</body>
+</html>
