@@ -109,6 +109,163 @@
   p { margin: 0 0 14px 0; }
 
   /* =========================================================
+     EXPEDITION BAR (progress + audio toggle)
+     ========================================================= */
+  .expedition-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+    background: linear-gradient(180deg, rgba(139,69,19,0.08), rgba(139,69,19,0.02));
+    border: 1px solid var(--parchment-shadow);
+    border-radius: var(--radius);
+  }
+
+  .progress-trail {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .trail-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .trail-labels {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+  }
+
+  .trail-node {
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
+    border-radius: 50%;
+    border: 2px solid var(--ink-soft);
+    background: rgba(255,255,255,0.3);
+    display: grid;
+    place-items: center;
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 0.75rem;
+    color: var(--ink-soft);
+    position: relative;
+    transition: all 0.4s var(--ease);
+  }
+
+  .trail-node.completed {
+    background: var(--moss);
+    border-color: var(--moss);
+    color: var(--parchment);
+  }
+  .trail-node.completed::after {
+    content: '✓';
+    font-size: 0.85rem;
+  }
+  .trail-node.completed .node-num {
+    display: none;
+  }
+
+  .trail-node.active {
+    background: var(--seal-red);
+    border-color: var(--seal-red-dark);
+    color: var(--parchment);
+    box-shadow: 0 0 0 3px rgba(139,44,26,0.2), 0 2px 6px rgba(43,29,14,0.3);
+    animation: activeNodePulse 2.4s ease-in-out infinite;
+  }
+
+  .trail-node.upcoming {
+    border-style: dashed;
+    border-color: var(--seal-red);
+    color: var(--seal-red);
+  }
+
+  @keyframes activeNodePulse {
+    0%, 100% { box-shadow: 0 0 0 3px rgba(139,44,26,0.2), 0 2px 6px rgba(43,29,14,0.3); }
+    50%      { box-shadow: 0 0 0 6px rgba(139,44,26,0.08), 0 2px 6px rgba(43,29,14,0.3); }
+  }
+
+  .trail-line {
+    flex: 1;
+    height: 2px;
+    background-image: linear-gradient(90deg, var(--ink-soft) 50%, transparent 50%);
+    background-size: 6px 2px;
+    background-repeat: repeat-x;
+    opacity: 0.5;
+    min-width: 8px;
+  }
+
+  .trail-line.completed {
+    background-image: linear-gradient(90deg, var(--moss), var(--moss));
+    opacity: 1;
+  }
+
+  .trail-label {
+    text-align: center;
+    font-family: var(--font-accent);
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+  }
+
+  .trail-label.active {
+    color: var(--seal-red);
+    font-weight: 700;
+  }
+
+  .trail-label.completed {
+    color: var(--moss);
+  }
+
+  .audio-toggle {
+    width: 40px;
+    height: 40px;
+    min-height: 40px;
+    padding: 0;
+    font-size: 1rem;
+    border-radius: 50%;
+    background: linear-gradient(180deg, var(--parchment), var(--parchment-dark));
+    color: var(--ink);
+    border: 1px solid var(--ink-soft);
+    box-shadow: 0 2px 4px rgba(43,29,14,0.2);
+    letter-spacing: 0;
+    position: relative;
+  }
+
+  .audio-toggle.on {
+    background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+    border-color: var(--leather);
+    color: var(--ink);
+  }
+
+  .audio-toggle.on::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    border: 1px solid var(--gold);
+    opacity: 0.5;
+    animation: audioRing 2s ease-in-out infinite;
+  }
+
+  @keyframes audioRing {
+    0%, 100% { transform: scale(1); opacity: 0.5; }
+    50%      { transform: scale(1.12); opacity: 0; }
+  }
+
+  @media (max-width: 420px) {
+    .trail-node { width: 22px; height: 22px; min-width: 22px; font-size: 0.7rem; }
+    .trail-label { font-size: 0.6rem; letter-spacing: 0.08em; }
+    .audio-toggle { width: 36px; height: 36px; min-height: 36px; }
+  }
+
+  /* =========================================================
      SCORE HEADER
      ========================================================= */
   .score-header {
@@ -732,12 +889,12 @@
 
   .map-city text {
     font-family: var(--font-accent);
-    font-size: 13px;
+    font-size: 5px;
     fill: var(--ink);
-    letter-spacing: 2px;
+    letter-spacing: 0.4px;
     paint-order: stroke;
     stroke: rgba(240,227,198,0.9);
-    stroke-width: 3;
+    stroke-width: 1;
     stroke-linejoin: round;
   }
 
@@ -746,7 +903,7 @@
     font-weight: 900;
     fill: var(--parchment);
     stroke: none;
-    font-size: 11px;
+    font-size: 5px;
     letter-spacing: 0;
     text-anchor: middle;
     dominant-baseline: central;
@@ -957,11 +1114,71 @@
     font-size: 1.4rem;
     color: var(--ink);
     letter-spacing: 0.08em;
+    overflow: hidden;
+    transform-origin: bottom;
+    transform: scaleY(0);
+    animation-fill-mode: forwards;
+    animation-timing-function: cubic-bezier(0.34, 1.2, 0.64, 1);
+    animation-name: riseBlock;
   }
 
-  .podium-block.first  { height: 130px; }
-  .podium-block.second { height: 100px; }
-  .podium-block.third  { height: 75px; }
+  .podium-block .block-label {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: blockLabelIn 0.5s var(--ease) forwards;
+  }
+
+  @keyframes riseBlock {
+    to { transform: scaleY(1); }
+  }
+
+  @keyframes blockLabelIn {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .podium-block.first  { height: 130px; animation-duration: 1.1s; animation-delay: 2.2s; }
+  .podium-block.second { height: 100px; animation-duration: 0.95s; animation-delay: 1.3s; }
+  .podium-block.third  { height: 75px;  animation-duration: 0.8s; animation-delay: 0.5s; }
+
+  .podium-block.first  .block-label { animation-delay: 3.2s; }
+  .podium-block.second .block-label { animation-delay: 2.2s; }
+  .podium-block.third  .block-label { animation-delay: 1.2s; }
+
+  .podium-spot .medal,
+  .podium-spot .player-name,
+  .podium-spot .player-score {
+    opacity: 0;
+    transform: translateY(-16px);
+    animation: medalDrop 0.6s cubic-bezier(0.34, 1.6, 0.64, 1) forwards;
+  }
+
+  @keyframes medalDrop {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .podium-spot.rank-third  .medal,
+  .podium-spot.rank-third  .player-name,
+  .podium-spot.rank-third  .player-score { animation-delay: 1.4s; }
+
+  .podium-spot.rank-second .medal,
+  .podium-spot.rank-second .player-name,
+  .podium-spot.rank-second .player-score { animation-delay: 2.4s; }
+
+  .podium-spot.rank-first .medal {
+    animation-delay: 3.4s;
+    animation-name: medalDropGlow;
+    animation-duration: 1.1s;
+  }
+  .podium-spot.rank-first .player-name,
+  .podium-spot.rank-first .player-score {
+    animation-delay: 3.6s;
+  }
+
+  @keyframes medalDropGlow {
+    0%   { opacity: 0; transform: translateY(-16px); filter: brightness(1) drop-shadow(0 0 0 transparent); }
+    55%  { opacity: 1; transform: translateY(0); filter: brightness(1.25) drop-shadow(0 0 16px var(--gold-bright)); }
+    100% { opacity: 1; transform: translateY(0); filter: brightness(1) drop-shadow(0 0 6px var(--gold)); }
+  }
 
   /* =========================================================
      ANIMATIONS (generic)
@@ -1216,7 +1433,8 @@ const state = {
   timer: null,
   timerValue: 20,
   mapPlaced: [],           // ids placed so far
-  mapEvaluated: false
+  mapEvaluated: false,
+  audioOn: false
 };
 
 /* =========================================================
@@ -1270,6 +1488,7 @@ const app = document.getElementById("app");
 
 function render() {
   stopTimer();
+  const topBar = state.phase === "setup" ? "" : renderExpeditionBar();
   const scoreHeader = state.phase === "setup" ? "" : renderScoreHeader();
   let screen = "";
   if (state.phase === "setup")       screen = renderSetup();
@@ -1278,8 +1497,49 @@ function render() {
   else if (state.phase === "transition") screen = renderTransition();
   else if (state.phase === "final")      screen = renderFinal();
 
-  app.innerHTML = scoreHeader + screen;
+  app.innerHTML = topBar + scoreHeader + screen;
   attachHandlers();
+}
+
+function getCycleStatus(i) {
+  if (state.phase === "setup") return "future";
+  if (state.phase === "final") return "completed";
+  if (state.phase === "transition") {
+    if (i <= state.cycleIdx) return "completed";
+    if (i === state.cycleIdx + 1) return "upcoming";
+    return "future";
+  }
+  if (i < state.cycleIdx) return "completed";
+  if (i === state.cycleIdx) return "active";
+  return "future";
+}
+
+function renderExpeditionBar() {
+  const cycleLabels = ["Hunter", "Road", "New Man", "Escape"];
+  const pinParts = [];
+  for (let i = 0; i < CYCLES.length; i++) {
+    const status = getCycleStatus(i);
+    pinParts.push(`<div class="trail-node ${status}"><span class="node-num">${i + 1}</span></div>`);
+    if (i < CYCLES.length - 1) {
+      const lineStatus = i < state.cycleIdx || (state.phase === "transition" && i <= state.cycleIdx) || state.phase === "final" ? "completed" : "";
+      pinParts.push(`<div class="trail-line ${lineStatus}"></div>`);
+    }
+  }
+
+  const labelParts = cycleLabels.map((lbl, i) => {
+    const status = getCycleStatus(i);
+    return `<div class="trail-label ${status}">${lbl}</div>`;
+  }).join("");
+
+  return `
+    <div class="expedition-bar">
+      <div class="progress-trail">
+        <div class="trail-row">${pinParts.join("")}</div>
+        <div class="trail-labels">${labelParts}</div>
+      </div>
+      <button class="audio-toggle ${state.audioOn ? 'on' : ''}" id="audio-toggle" aria-label="Toggle sound" title="${state.audioOn ? 'Sound on — tap to mute' : 'Sound off — tap to enable'}">♪</button>
+    </div>
+  `;
 }
 
 function renderScoreHeader() {
@@ -1384,7 +1644,7 @@ function renderChallenge() {
   const awardHtml = answered ? `
     <div class="explanation animate-in">${escapeHtml(q.explain)}</div>
     <div class="award-panel animate-in">
-      <div class="label">Who answered correctly?</div>
+      <div class="label">${state.awardedFor !== null && state.awardedFor >= 0 ? "Tap again to undo · tap another to transfer" : "Who answered correctly?"}</div>
       <div class="award-grid">
         ${state.players.map((p, i) => `
           <button data-award="${i}" class="${state.awardedFor === i ? 'awarded' : ''}">${escapeHtml(p.name || "Player " + (i+1))}</button>
@@ -1474,7 +1734,7 @@ function renderMapChallenge() {
 
   const awardHtml = evaluated ? `
     <div class="award-panel animate-in">
-      <div class="label">Award the map challenge</div>
+      <div class="label">${state.awardedFor !== null && state.awardedFor >= 0 ? "Tap again to undo · tap another to transfer" : "Award the map challenge"}</div>
       <div class="award-grid">
         ${state.players.map((p, i) => `
           <button data-award="${i}" class="${state.awardedFor === i ? 'awarded' : ''}">${escapeHtml(p.name || "Player " + (i+1))}</button>
@@ -1564,12 +1824,12 @@ function renderFinal() {
   const second = sorted[1];
   const third  = sorted[2];
 
-  const spot = (p, medalClass, medalText, blockClass, blockText) => `
-    <div class="podium-spot">
+  const spot = (p, medalClass, medalText, blockClass, blockText, rankClass) => `
+    <div class="podium-spot ${rankClass}">
       <div class="medal ${medalClass}">${medalText}</div>
       <div class="player-name">${escapeHtml(p.name || "Traveler")}</div>
       <div class="player-score">${p.score} pts</div>
-      <div class="podium-block ${blockClass}">${blockText}</div>
+      <div class="podium-block ${blockClass}"><span class="block-label">${blockText}</span></div>
     </div>
   `;
 
@@ -1582,9 +1842,9 @@ function renderFinal() {
       </p>
 
       <div class="podium">
-        ${spot(second, "silver", "II", "second", "2ND")}
-        ${spot(first, "gold", "I", "first", "1ST")}
-        ${spot(third, "bronze", "III", "third", "3RD")}
+        ${spot(second, "silver", "II", "second", "2ND", "rank-second")}
+        ${spot(first, "gold", "I", "first", "1ST", "rank-first")}
+        ${spot(third, "bronze", "III", "third", "3RD", "rank-third")}
       </div>
 
       <div class="scripture" style="max-width: 560px; margin: 20px auto;">
@@ -1603,6 +1863,9 @@ function renderFinal() {
    HANDLERS
    ========================================================= */
 function attachHandlers() {
+  const audioBtn = document.getElementById("audio-toggle");
+  if (audioBtn) audioBtn.addEventListener("click", toggleAudio);
+
   if (state.phase === "setup") {
     document.getElementById("start-btn").addEventListener("click", handleStart);
     // Enter key advances focus
@@ -1693,23 +1956,53 @@ function revealAnswer(pickedIdx) {
   stopTimer();
   state.questionAnswered = true;
   state.lastPicked = pickedIdx;
+
+  const c = CYCLES[state.cycleIdx];
+  const q = c.questions[state.questionIdx];
+  if (pickedIdx !== null && pickedIdx === q.correct) {
+    playCorrectSfx();
+  } else if (pickedIdx !== null) {
+    playWrongSfx();
+  }
+
   render();
 }
 
 function handleAward(idx) {
-  state.players[idx].score += 1;
-  state.awardedFor = idx;
+  // Three cases:
+  //  - same player tapped again → undo
+  //  - different player currently awarded → transfer point
+  //  - no one awarded yet → award point
+  let flashIdx = idx;
+  if (state.awardedFor === idx) {
+    // Undo
+    state.players[idx].score = Math.max(0, state.players[idx].score - 1);
+    state.awardedFor = null;
+    flashIdx = null;
+  } else if (state.awardedFor !== null && state.awardedFor !== undefined && state.awardedFor >= 0) {
+    // Transfer from previous to new
+    state.players[state.awardedFor].score = Math.max(0, state.players[state.awardedFor].score - 1);
+    state.players[idx].score += 1;
+    state.awardedFor = idx;
+  } else {
+    // Fresh award
+    state.players[idx].score += 1;
+    state.awardedFor = idx;
+  }
+
+  playAwardSfx();
+
   render();
-  // Flash the just-awarded card
-  requestAnimationFrame(() => {
-    const card = document.querySelector(`[data-score-idx="${idx}"]`);
-    if (card) {
-      card.classList.remove("flash");
-      // Force reflow to restart animation
-      void card.offsetWidth;
-      card.classList.add("flash");
-    }
-  });
+  if (flashIdx !== null) {
+    requestAnimationFrame(() => {
+      const card = document.querySelector(`[data-score-idx="${flashIdx}"]`);
+      if (card) {
+        card.classList.remove("flash");
+        void card.offsetWidth;
+        card.classList.add("flash");
+      }
+    });
+  }
 }
 
 function handleNextQuestion() {
@@ -1737,9 +2030,11 @@ function handleFinishCycle() {
 function afterCycle() {
   if (state.cycleIdx < CYCLES.length - 1) {
     state.phase = "transition";
+    playTransitionSfx();
     render();
   } else {
     state.phase = "final";
+    playTransitionSfx();
     render();
   }
 }
@@ -1769,6 +2064,7 @@ function handleCityTap(cityId) {
   if (state.mapPlaced.includes(cityId)) return;
   if (state.mapPlaced.length >= MAP_CORRECT_ORDER.length) return;
   state.mapPlaced.push(cityId);
+  playPinDropSfx();
   render();
 }
 
@@ -1845,6 +2141,185 @@ function escapeHtml(str) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+/* =========================================================
+   AUDIO (Web Audio API — procedural, no external files)
+   ========================================================= */
+const audio = {
+  ctx: null,
+  masterGain: null,
+  droneNodes: null
+};
+
+function initAudio() {
+  if (audio.ctx) return;
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    audio.ctx = new Ctx();
+    audio.masterGain = audio.ctx.createGain();
+    audio.masterGain.gain.value = 0;
+    audio.masterGain.connect(audio.ctx.destination);
+  } catch (e) {
+    audio.ctx = null;
+  }
+}
+
+function startDrone() {
+  if (!audio.ctx) return;
+  const ctx = audio.ctx;
+  const now = ctx.currentTime;
+
+  // If already created, just ramp master gain back up
+  if (audio.droneNodes) {
+    audio.masterGain.gain.cancelScheduledValues(now);
+    audio.masterGain.gain.setValueAtTime(audio.masterGain.gain.value, now);
+    audio.masterGain.gain.linearRampToValueAtTime(0.35, now + 1.5);
+    return;
+  }
+
+  // Ancient-sounding drone: root + fifth + octave, all slightly detuned
+  // for a shimmer. Filter noise lightly on top for wind/desert texture.
+  const freqs = [98, 146.83, 196]; // G2, D3, G3 — open fifth gives a "stone" sound
+  const oscs = [];
+  const oscGains = [];
+
+  freqs.forEach((f, i) => {
+    const o1 = ctx.createOscillator();
+    const o2 = ctx.createOscillator();
+    o1.type = i === 2 ? 'triangle' : 'sine';
+    o2.type = 'sine';
+    o1.frequency.value = f;
+    o2.frequency.value = f * 1.003; // gentle beat
+
+    const g = ctx.createGain();
+    g.gain.value = i === 0 ? 0.22 : (i === 1 ? 0.15 : 0.1);
+
+    o1.connect(g);
+    o2.connect(g);
+
+    // Slow amplitude wobble
+    const lfo = ctx.createOscillator();
+    const lfoGain = ctx.createGain();
+    lfo.frequency.value = 0.07 + i * 0.03;
+    lfoGain.gain.value = i === 0 ? 0.05 : 0.03;
+    lfo.connect(lfoGain);
+    lfoGain.connect(g.gain);
+
+    g.connect(audio.masterGain);
+    o1.start(now); o2.start(now); lfo.start(now);
+
+    oscs.push(o1, o2, lfo);
+    oscGains.push(g);
+  });
+
+  // Filtered noise for wind texture
+  const bufferSize = 2 * ctx.sampleRate;
+  const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const nd = noiseBuffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) nd[i] = Math.random() * 2 - 1;
+  const noise = ctx.createBufferSource();
+  noise.buffer = noiseBuffer;
+  noise.loop = true;
+
+  const noiseFilter = ctx.createBiquadFilter();
+  noiseFilter.type = 'bandpass';
+  noiseFilter.frequency.value = 420;
+  noiseFilter.Q.value = 0.9;
+
+  const noiseGain = ctx.createGain();
+  noiseGain.gain.value = 0.045;
+
+  // Slow filter sweep for wind motion
+  const filterLfo = ctx.createOscillator();
+  const filterLfoGain = ctx.createGain();
+  filterLfo.frequency.value = 0.04;
+  filterLfoGain.gain.value = 180;
+  filterLfo.connect(filterLfoGain);
+  filterLfoGain.connect(noiseFilter.frequency);
+  filterLfo.start(now);
+
+  noise.connect(noiseFilter);
+  noiseFilter.connect(noiseGain);
+  noiseGain.connect(audio.masterGain);
+  noise.start(now);
+
+  audio.droneNodes = { oscs, oscGains, noise, filterLfo, noiseGain, noiseFilter };
+
+  // Fade master in
+  audio.masterGain.gain.cancelScheduledValues(now);
+  audio.masterGain.gain.setValueAtTime(0, now);
+  audio.masterGain.gain.linearRampToValueAtTime(0.35, now + 2.0);
+}
+
+function stopDrone() {
+  if (!audio.ctx || !audio.masterGain) return;
+  const ctx = audio.ctx;
+  const now = ctx.currentTime;
+  audio.masterGain.gain.cancelScheduledValues(now);
+  audio.masterGain.gain.setValueAtTime(audio.masterGain.gain.value, now);
+  audio.masterGain.gain.linearRampToValueAtTime(0, now + 0.8);
+}
+
+function toggleAudio() {
+  initAudio();
+  if (!audio.ctx) return;
+  if (audio.ctx.state === 'suspended') audio.ctx.resume();
+
+  state.audioOn = !state.audioOn;
+  if (state.audioOn) startDrone();
+  else stopDrone();
+  render();
+}
+
+/* Short sound effects — only play when audio is on */
+function playTone(freq, duration, type = 'sine', vol = 0.15, attack = 0.01, release = 0.2) {
+  if (!state.audioOn || !audio.ctx) return;
+  const ctx = audio.ctx;
+  const now = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  const g = ctx.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  g.gain.value = 0;
+  g.gain.linearRampToValueAtTime(vol, now + attack);
+  g.gain.linearRampToValueAtTime(0, now + attack + duration + release);
+  osc.connect(g);
+  g.connect(audio.masterGain);
+  osc.start(now);
+  osc.stop(now + attack + duration + release + 0.05);
+}
+
+function playAwardSfx() {
+  // Bright two-note "ting" (G5 → C6)
+  playTone(784, 0.08, 'triangle', 0.18, 0.005, 0.18);
+  setTimeout(() => playTone(1046.5, 0.14, 'triangle', 0.16, 0.005, 0.25), 80);
+}
+
+function playCorrectSfx() {
+  // Major third rising
+  playTone(523.25, 0.12, 'sine', 0.14, 0.005, 0.2);
+  setTimeout(() => playTone(659.25, 0.16, 'sine', 0.14, 0.005, 0.25), 90);
+}
+
+function playWrongSfx() {
+  // Descending minor third
+  playTone(349.23, 0.14, 'triangle', 0.12, 0.005, 0.2);
+  setTimeout(() => playTone(293.66, 0.22, 'triangle', 0.12, 0.005, 0.3), 100);
+}
+
+function playTransitionSfx() {
+  // Chime: D5, G5, B5 arpeggio
+  playTone(587.33, 0.18, 'triangle', 0.14, 0.005, 0.4);
+  setTimeout(() => playTone(783.99, 0.18, 'triangle', 0.14, 0.005, 0.4), 140);
+  setTimeout(() => playTone(987.77, 0.35, 'triangle', 0.13, 0.005, 0.6), 280);
+}
+
+function playPinDropSfx() {
+  // Small wooden thunk
+  playTone(180, 0.08, 'sine', 0.2, 0.002, 0.1);
+  playTone(90, 0.1, 'sine', 0.14, 0.002, 0.15);
 }
 
 /* =========================================================
