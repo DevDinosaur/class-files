@@ -871,7 +871,7 @@
   .map-city circle.pin {
     fill: var(--seal-red);
     stroke: var(--parchment);
-    stroke-width: 2;
+    stroke-width: 1;
     transition: fill 0.2s, r 0.2s;
   }
 
@@ -884,7 +884,7 @@
   }
 
   .map-city:hover circle.pin {
-    r: 11;
+    r: 5.5;
   }
 
   .map-city text {
@@ -901,11 +901,13 @@
   .map-city .order-num {
     font-family: var(--font-display);
     font-weight: 900;
-    fill: var(--parchment);
-    stroke: none;
+    fill: var(--ink);
+    stroke: rgba(240,227,198,0.9);
+    stroke-width: 1;
+    paint-order: stroke;
     font-size: 5px;
     letter-spacing: 0;
-    text-anchor: middle;
+    text-anchor: start;
     dominant-baseline: central;
   }
 
@@ -1701,10 +1703,10 @@ function renderMapChallenge() {
     let extraCls = placed ? "placed" : "";
     return `
       <g class="map-city ${extraCls}" data-city="${city.id}" transform="translate(${city.x}, ${city.y})">
-        <circle class="hit" r="14" fill="transparent"></circle>
-        <circle class="pin" r="9"></circle>
-        ${placed ? `<text class="order-num">${idx + 1}</text>` : ""}
-        <text x="0" y="-14" text-anchor="middle">${escapeHtml(city.name)}</text>
+        <circle class="hit" r="10" fill="transparent"></circle>
+        <circle class="pin" r="4.5"></circle>
+        ${placed ? `<text class="order-num" x="8" y="0">${idx + 1}</text>` : ""}
+        <text x="0" y="-8" text-anchor="middle">${escapeHtml(city.name)}</text>
       </g>
     `;
   }).join("");
@@ -1770,10 +1772,10 @@ function renderMapChallenge() {
 
             <!-- Fixed start city -->
             <g class="map-city start" transform="translate(${MAP_START.x}, ${MAP_START.y})">
-              <circle class="hit" r="14" fill="transparent"></circle>
-              <circle class="pin" r="10"></circle>
-              <text class="order-num">★</text>
-              <text x="0" y="-15" text-anchor="middle">JERUSALEM · START</text>
+              <circle class="hit" r="10" fill="transparent"></circle>
+              <circle class="pin" r="5"></circle>
+              <text class="order-num" x="8" y="0">★</text>
+              <text x="0" y="-9" text-anchor="middle">JERUSALEM · START</text>
             </g>
 
             <!-- Selectable cities -->
