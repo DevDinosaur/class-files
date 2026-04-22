@@ -517,6 +517,51 @@
 
   .field {
     margin-bottom: 14px;
+    position: relative;
+  }
+
+  .field label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .optional-tag {
+    font-family: var(--font-body);
+    font-style: italic;
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
+    text-transform: none;
+    color: var(--ink-soft);
+    opacity: 0.7;
+  }
+
+  .remove-slot {
+    margin-left: auto;
+    width: 24px;
+    height: 24px;
+    min-height: 24px;
+    padding: 0;
+    font-size: 1rem;
+    line-height: 1;
+    background: transparent;
+    color: var(--ink-soft);
+    border: 1px solid var(--ink-soft);
+    border-radius: 50%;
+    box-shadow: none;
+    letter-spacing: 0;
+    text-transform: none;
+    font-family: var(--font-body);
+    font-weight: normal;
+  }
+
+  .remove-slot:hover:not(:disabled) {
+    background: var(--seal-red);
+    color: var(--parchment);
+    border-color: var(--seal-red);
+    transform: none;
+    filter: none;
+    box-shadow: none;
   }
 
   /* =========================================================
@@ -1085,6 +1130,7 @@
   .medal.gold   { background: radial-gradient(circle at 35% 30%, #f7dd9a, var(--gold), #8f6a1f); }
   .medal.silver { background: radial-gradient(circle at 35% 30%, #f2f2f2, #c8c8c8, #7f7f7f); }
   .medal.bronze { background: radial-gradient(circle at 35% 30%, #e2b08a, #b5793e, #6a3f18); }
+  .medal.iron   { background: radial-gradient(circle at 35% 30%, #c0c0c0, #888888, #4a4a4a); color: var(--parchment); }
 
   .podium-spot .player-name {
     font-family: var(--font-display);
@@ -1141,10 +1187,54 @@
   .podium-block.first  { height: 130px; animation-duration: 1.1s; animation-delay: 2.2s; }
   .podium-block.second { height: 100px; animation-duration: 0.95s; animation-delay: 1.3s; }
   .podium-block.third  { height: 75px;  animation-duration: 0.8s; animation-delay: 0.5s; }
+  .podium-block.fourth { height: 55px;  animation-duration: 0.7s; animation-delay: 0.3s; }
 
   .podium-block.first  .block-label { animation-delay: 3.2s; }
   .podium-block.second .block-label { animation-delay: 2.2s; }
   .podium-block.third  .block-label { animation-delay: 1.2s; }
+  .podium-block.fourth .block-label { animation-delay: 0.9s; }
+
+  /* 2-player layout: faster reveal since there's only silver and gold */
+  .podium.players-2 { grid-template-columns: 1fr 1fr; max-width: 420px; }
+  .podium.players-2 .podium-block.second { animation-delay: 0.4s; animation-duration: 0.9s; }
+  .podium.players-2 .podium-block.first  { animation-delay: 1.4s; animation-duration: 1.0s; }
+  .podium.players-2 .podium-block.second .block-label { animation-delay: 1.3s; }
+  .podium.players-2 .podium-block.first  .block-label { animation-delay: 2.3s; }
+  .podium.players-2 .rank-second .medal,
+  .podium.players-2 .rank-second .player-name,
+  .podium.players-2 .rank-second .player-score { animation-delay: 1.3s; }
+  .podium.players-2 .rank-first .medal { animation-delay: 2.4s; }
+  .podium.players-2 .rank-first .player-name,
+  .podium.players-2 .rank-first .player-score { animation-delay: 2.6s; }
+
+  /* 4-player layout: 4 columns, climactic reveal still ends with 1st */
+  .podium.players-4 { grid-template-columns: repeat(4, 1fr); }
+  .podium.players-4 .rank-fourth .medal,
+  .podium.players-4 .rank-fourth .player-name,
+  .podium.players-4 .rank-fourth .player-score {
+    opacity: 0;
+    transform: translateY(-16px);
+    animation: medalDrop 0.6s cubic-bezier(0.34, 1.6, 0.64, 1) forwards;
+    animation-delay: 1.0s;
+  }
+  /* Shift other ranks slightly later so 4th lands first, then 3rd, 2nd, 1st */
+  .podium.players-4 .rank-third  .medal,
+  .podium.players-4 .rank-third  .player-name,
+  .podium.players-4 .rank-third  .player-score { animation-delay: 1.9s; }
+  .podium.players-4 .rank-second .medal,
+  .podium.players-4 .rank-second .player-name,
+  .podium.players-4 .rank-second .player-score { animation-delay: 2.9s; }
+  .podium.players-4 .rank-first  .medal { animation-delay: 4.0s; }
+  .podium.players-4 .rank-first  .player-name,
+  .podium.players-4 .rank-first  .player-score { animation-delay: 4.2s; }
+
+  .podium.players-4 .podium-block.third  { animation-delay: 1.0s; }
+  .podium.players-4 .podium-block.second { animation-delay: 1.9s; }
+  .podium.players-4 .podium-block.first  { animation-delay: 2.9s; animation-duration: 1.1s; }
+  .podium.players-4 .podium-block.fourth .block-label { animation-delay: 1.0s; }
+  .podium.players-4 .podium-block.third  .block-label { animation-delay: 1.8s; }
+  .podium.players-4 .podium-block.second .block-label { animation-delay: 2.8s; }
+  .podium.players-4 .podium-block.first  .block-label { animation-delay: 4.0s; }
 
   .podium-spot .medal,
   .podium-spot .player-name,
@@ -1217,6 +1307,7 @@
     .podium-block.first  { height: 110px; }
     .podium-block.second { height: 85px; }
     .podium-block.third  { height: 65px; }
+    .podium-block.fourth { height: 48px; }
   }
 </style>
 </head>
@@ -1424,9 +1515,9 @@ const state = {
   phase: "setup",          // setup | discovery | challenge | transition | final
   players: [
     { name: "", score: 0 },
-    { name: "", score: 0 },
     { name: "", score: 0 }
   ],
+  setupSlots: 2,           // 2-4 player input slots shown on setup screen
   cycleIdx: 0,
   questionIdx: 0,
   questionAnswered: false,
@@ -1545,8 +1636,9 @@ function renderExpeditionBar() {
 }
 
 function renderScoreHeader() {
+  const n = state.players.length;
   return `
-    <div class="score-header" id="score-header">
+    <div class="score-header" id="score-header" style="grid-template-columns: repeat(${n}, 1fr);">
       ${state.players.map((p, i) => `
         <div class="score-card" data-score-idx="${i}">
           <div class="name">${escapeHtml(p.name || "Player " + (i+1))}</div>
@@ -1559,6 +1651,25 @@ function renderScoreHeader() {
 
 /* ---------- SETUP ---------- */
 function renderSetup() {
+  const ordinals = ["One", "Two", "Three", "Four"];
+  const slots = [];
+  for (let i = 0; i < state.setupSlots; i++) {
+    const isOptional = i >= 2;
+    const existing = state.players[i] ? escapeHtml(state.players[i].name) : "";
+    slots.push(`
+      <div class="field">
+        <label for="p${i+1}">
+          Traveler ${ordinals[i]}
+          ${isOptional ? '<span class="optional-tag">optional</span>' : ''}
+          ${isOptional ? `<button type="button" class="remove-slot" data-remove="${i}" aria-label="Remove this traveler">×</button>` : ''}
+        </label>
+        <input id="p${i+1}" type="text" maxlength="14" placeholder="Enter name" autocomplete="off" value="${existing}" />
+      </div>
+    `);
+  }
+
+  const canAdd = state.setupSlots < 4;
+
   return `
     <div class="title-wrap animate-in">
       <div class="tag">An Expedition Game</div>
@@ -1570,11 +1681,16 @@ function renderSetup() {
     <div class="frame stagger">
       <div class="eyebrow">Name Your Travelers</div>
       <p style="font-style: italic; color: var(--ink-soft); margin-bottom: 18px;">
-        Three explorers will chase the story of a man who thought he was hunting God and discovered that God was hunting him.
+        Two to four explorers will chase the story of a man who thought he was hunting God and discovered that God was hunting him.
       </p>
-      <div class="field"><label for="p1">Traveler One</label><input id="p1" type="text" maxlength="14" placeholder="Enter name" autocomplete="off" /></div>
-      <div class="field"><label for="p2">Traveler Two</label><input id="p2" type="text" maxlength="14" placeholder="Enter name" autocomplete="off" /></div>
-      <div class="field"><label for="p3">Traveler Three</label><input id="p3" type="text" maxlength="14" placeholder="Enter name" autocomplete="off" /></div>
+
+      ${slots.join("")}
+
+      ${canAdd ? `
+        <div style="text-align: center; margin: 6px 0 18px;">
+          <button id="add-slot" class="btn-ghost" style="font-size: 0.75rem; padding: 8px 14px; min-height: 36px; letter-spacing: 0.15em;">+ Add Another Traveler</button>
+        </div>
+      ` : '<div style="height: 8px;"></div>'}
 
       <div class="centered-actions">
         <button id="start-btn" class="btn-gold">Begin the Journey</button>
@@ -1643,11 +1759,12 @@ function renderChallenge() {
     `;
   }).join("");
 
+  const n = state.players.length;
   const awardHtml = answered ? `
     <div class="explanation animate-in">${escapeHtml(q.explain)}</div>
     <div class="award-panel animate-in">
       <div class="label">${state.awardedFor !== null && state.awardedFor >= 0 ? "Tap again to undo · tap another to transfer" : "Who answered correctly?"}</div>
-      <div class="award-grid">
+      <div class="award-grid" style="grid-template-columns: repeat(${n}, 1fr);">
         ${state.players.map((p, i) => `
           <button data-award="${i}" class="${state.awardedFor === i ? 'awarded' : ''}">${escapeHtml(p.name || "Player " + (i+1))}</button>
         `).join("")}
@@ -1734,10 +1851,11 @@ function renderMapChallenge() {
     </div>
   ` : "";
 
+  const nPlayers = state.players.length;
   const awardHtml = evaluated ? `
     <div class="award-panel animate-in">
       <div class="label">${state.awardedFor !== null && state.awardedFor >= 0 ? "Tap again to undo · tap another to transfer" : "Award the map challenge"}</div>
-      <div class="award-grid">
+      <div class="award-grid" style="grid-template-columns: repeat(${nPlayers}, 1fr);">
         ${state.players.map((p, i) => `
           <button data-award="${i}" class="${state.awardedFor === i ? 'awarded' : ''}">${escapeHtml(p.name || "Player " + (i+1))}</button>
         `).join("")}
@@ -1821,10 +1939,7 @@ function renderFinal() {
     .map((p, i) => ({ ...p, idx: i }))
     .sort((a, b) => b.score - a.score);
 
-  // Assign medals (handle ties by position order, simple approach)
-  const first  = sorted[0];
-  const second = sorted[1];
-  const third  = sorted[2];
+  const n = state.players.length;
 
   const spot = (p, medalClass, medalText, blockClass, blockText, rankClass) => `
     <div class="podium-spot ${rankClass}">
@@ -1835,6 +1950,35 @@ function renderFinal() {
     </div>
   `;
 
+  let podiumHtml = "";
+  if (n === 2) {
+    // Gold on left, silver on right (winner gets the prime read position)
+    podiumHtml = `
+      <div class="podium players-2">
+        ${spot(sorted[0], "gold",   "I",  "first",  "1ST", "rank-first")}
+        ${spot(sorted[1], "silver", "II", "second", "2ND", "rank-second")}
+      </div>
+    `;
+  } else if (n === 3) {
+    podiumHtml = `
+      <div class="podium players-3">
+        ${spot(sorted[1], "silver", "II",  "second", "2ND", "rank-second")}
+        ${spot(sorted[0], "gold",   "I",   "first",  "1ST", "rank-first")}
+        ${spot(sorted[2], "bronze", "III", "third",  "3RD", "rank-third")}
+      </div>
+    `;
+  } else {
+    // 4 players — order: 4th, 2nd, 1st, 3rd (Olympic-extended, gold near center)
+    podiumHtml = `
+      <div class="podium players-4">
+        ${spot(sorted[3], "iron",   "IV",  "fourth", "4TH", "rank-fourth")}
+        ${spot(sorted[1], "silver", "II",  "second", "2ND", "rank-second")}
+        ${spot(sorted[0], "gold",   "I",   "first",  "1ST", "rank-first")}
+        ${spot(sorted[2], "bronze", "III", "third",  "3RD", "rank-third")}
+      </div>
+    `;
+  }
+
   return `
     <div class="podium-wrap animate-in">
       <div class="eyebrow">Expedition Complete</div>
@@ -1843,11 +1987,7 @@ function renderFinal() {
         From Jerusalem to Damascus, to Arabia, and on to Tarsus. You followed the road of a changed man.
       </p>
 
-      <div class="podium">
-        ${spot(second, "silver", "II", "second", "2ND", "rank-second")}
-        ${spot(first, "gold", "I", "first", "1ST", "rank-first")}
-        ${spot(third, "bronze", "III", "third", "3RD", "rank-third")}
-      </div>
+      ${podiumHtml}
 
       <div class="scripture" style="max-width: 560px; margin: 20px auto;">
         \u201CBut I do not count my life of any value nor as precious to myself, if only I may finish my course and the ministry that I received from the Lord Jesus, to testify to the gospel of the grace of God.\u201D
@@ -1870,16 +2010,30 @@ function attachHandlers() {
 
   if (state.phase === "setup") {
     document.getElementById("start-btn").addEventListener("click", handleStart);
-    // Enter key advances focus
-    ["p1","p2","p3"].forEach((id, i) => {
-      const el = document.getElementById(id);
+
+    const addBtn = document.getElementById("add-slot");
+    if (addBtn) addBtn.addEventListener("click", handleAddSlot);
+
+    document.querySelectorAll("[data-remove]").forEach(b => {
+      b.addEventListener("click", e => {
+        e.preventDefault();
+        handleRemoveSlot(parseInt(b.dataset.remove, 10));
+      });
+    });
+
+    // Enter advances to next field, or starts the game on the last one
+    for (let i = 0; i < state.setupSlots; i++) {
+      const el = document.getElementById("p" + (i+1));
+      if (!el) continue;
       el.addEventListener("keydown", e => {
         if (e.key === "Enter") {
-          if (i < 2) document.getElementById("p" + (i+2)).focus();
+          e.preventDefault();
+          const next = document.getElementById("p" + (i+2));
+          if (next) next.focus();
           else handleStart();
         }
       });
-    });
+    }
   }
   else if (state.phase === "discovery") {
     document.getElementById("discovery-continue").addEventListener("click", handleDiscoveryContinue);
@@ -1927,14 +2081,58 @@ function attachHandlers() {
 }
 
 function handleStart() {
-  const names = ["p1","p2","p3"].map(id => (document.getElementById(id).value || "").trim());
-  if (names.some(n => !n)) {
-    alert("Each traveler needs a name before you set out.");
+  const names = [];
+  for (let i = 0; i < state.setupSlots; i++) {
+    const el = document.getElementById("p" + (i+1));
+    if (el) names.push(el.value.trim());
+  }
+
+  // Required: first 2 must be filled. Optional slots (3, 4) can be empty —
+  // empty optional slots are simply dropped.
+  if (!names[0] || !names[1]) {
+    alert("Travelers One and Two need names before you set out.");
     return;
   }
-  state.players = names.map(n => ({ name: n, score: 0 }));
+
+  // Drop empty optional slots
+  const finalNames = names.filter((n, i) => i < 2 || n);
+  state.players = finalNames.map(n => ({ name: n, score: 0 }));
   state.phase = "discovery";
   state.cycleIdx = 0;
+  render();
+}
+
+function captureSetupNames() {
+  // Save what's currently typed so re-renders don't wipe input
+  for (let i = 0; i < state.setupSlots; i++) {
+    const el = document.getElementById("p" + (i+1));
+    if (el) {
+      if (!state.players[i]) state.players[i] = { name: "", score: 0 };
+      state.players[i].name = el.value;
+    }
+  }
+}
+
+function handleAddSlot() {
+  if (state.setupSlots >= 4) return;
+  captureSetupNames();
+  state.setupSlots += 1;
+  if (!state.players[state.setupSlots - 1]) {
+    state.players[state.setupSlots - 1] = { name: "", score: 0 };
+  }
+  render();
+  // Focus the new slot for fast typing
+  requestAnimationFrame(() => {
+    const el = document.getElementById("p" + state.setupSlots);
+    if (el) el.focus();
+  });
+}
+
+function handleRemoveSlot(idx) {
+  if (idx < 2 || idx >= state.setupSlots) return;
+  captureSetupNames();
+  state.players.splice(idx, 1);
+  state.setupSlots -= 1;
   render();
 }
 
@@ -2049,7 +2247,8 @@ function handleTransitionContinue() {
 
 function handlePlayAgain() {
   state.phase = "setup";
-  state.players = [{ name: "", score: 0 }, { name: "", score: 0 }, { name: "", score: 0 }];
+  state.players = [{ name: "", score: 0 }, { name: "", score: 0 }];
+  state.setupSlots = 2;
   state.cycleIdx = 0;
   state.questionIdx = 0;
   state.questionAnswered = false;
