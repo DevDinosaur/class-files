@@ -223,6 +223,12 @@
     color: var(--moss);
   }
 
+  .expedition-controls {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
   .audio-toggle {
     width: 40px;
     height: 40px;
@@ -254,6 +260,27 @@
     animation: audioRing 2s ease-in-out infinite;
   }
 
+  .reset-btn {
+    width: 40px;
+    height: 40px;
+    min-height: 40px;
+    padding: 0;
+    font-size: 1.25rem;
+    border-radius: 50%;
+    background: linear-gradient(180deg, var(--parchment), var(--parchment-dark));
+    color: var(--ink-soft);
+    border: 1px solid var(--ink-soft);
+    box-shadow: 0 2px 4px rgba(43,29,14,0.2);
+    letter-spacing: 0;
+    line-height: 1;
+  }
+
+  .reset-btn:hover:not(:disabled) {
+    background: linear-gradient(180deg, #c98574, var(--seal-red));
+    color: var(--parchment);
+    border-color: var(--seal-red-dark);
+  }
+
   @keyframes audioRing {
     0%, 100% { transform: scale(1); opacity: 0.5; }
     50%      { transform: scale(1.12); opacity: 0; }
@@ -262,7 +289,8 @@
   @media (max-width: 420px) {
     .trail-node { width: 22px; height: 22px; min-width: 22px; font-size: 0.7rem; }
     .trail-label { font-size: 0.6rem; letter-spacing: 0.08em; }
-    .audio-toggle { width: 36px; height: 36px; min-height: 36px; }
+    .audio-toggle, .reset-btn { width: 36px; height: 36px; min-height: 36px; }
+    .reset-btn { font-size: 1.1rem; }
   }
 
   /* =========================================================
@@ -1527,7 +1555,8 @@ const state = {
   timerValue: 20,
   mapPlaced: [],           // ids placed so far
   mapEvaluated: false,
-  audioOn: false
+  audioOn: false,
+  confirmReset: false      // shows a "start over?" confirmation overlay
 };
 
 /* =========================================================
@@ -1584,7 +1613,10 @@ function render() {
   const topBar = state.phase === "setup" ? "" : renderExpeditionBar();
   const scoreHeader = state.phase === "setup" ? "" : renderScoreHeader();
   let screen = "";
-  if (state.phase === "setup")       screen = renderSetup();
+
+  if (state.confirmReset && state.phase !== "setup") {
+    screen = renderResetConfirm();
+  } else if (state.phase === "setup")       screen = renderSetup();
   else if (state.phase === "discovery")  screen = renderDiscovery();
   else if (state.phase === "challenge")  screen = renderChallenge();
   else if (state.phase === "transition") screen = renderTransition();
@@ -1630,7 +1662,10 @@ function renderExpeditionBar() {
         <div class="trail-row">${pinParts.join("")}</div>
         <div class="trail-labels">${labelParts}</div>
       </div>
-      <button class="audio-toggle ${state.audioOn ? 'on' : ''}" id="audio-toggle" aria-label="Toggle sound" title="${state.audioOn ? 'Sound on — tap to mute' : 'Sound off — tap to enable'}">♪</button>
+      <div class="expedition-controls">
+        <button class="audio-toggle ${state.audioOn ? 'on' : ''}" id="audio-toggle" aria-label="Toggle sound" title="${state.audioOn ? 'Sound on — tap to mute' : 'Sound off — tap to enable'}">♪</button>
+        ${state.phase === "final" ? "" : `<button class="reset-btn" id="reset-btn" aria-label="Start over" title="Start over">⟲</button>`}
+      </div>
     </div>
   `;
 }
@@ -1933,6 +1968,29 @@ function renderTransition() {
   `;
 }
 
+/* ---------- RESET CONFIRMATION ---------- */
+function renderResetConfirm() {
+  return `
+    <div class="frame animate-in" style="border: 2px solid var(--seal-red);">
+      <div class="discovery-hero">
+        <div class="cycle-num" style="color: var(--seal-red);">⚠ Hold On</div>
+        <h2>Start Over?</h2>
+      </div>
+      <div class="divider"><span>✦</span></div>
+      <p style="text-align: center; font-family: var(--font-body); font-size: 1.1rem; color: var(--ink); margin-bottom: 8px;">
+        This will clear all current scores and return to the traveler setup screen.
+      </p>
+      <p style="text-align: center; font-family: var(--font-accent); font-size: 0.78rem; letter-spacing: 0.25em; color: var(--seal-red); margin-top: 6px; text-transform: uppercase;">
+        The Expedition Cannot Be Undone
+      </p>
+      <div class="centered-actions" style="margin-top: 22px;">
+        <button id="reset-cancel" class="btn-ghost">Keep Playing</button>
+        <button id="reset-confirm" class="btn-seal">Yes, Start Over</button>
+      </div>
+    </div>
+  `;
+}
+
 /* ---------- FINAL ---------- */
 function renderFinal() {
   const sorted = state.players
@@ -2007,6 +2065,17 @@ function renderFinal() {
 function attachHandlers() {
   const audioBtn = document.getElementById("audio-toggle");
   if (audioBtn) audioBtn.addEventListener("click", toggleAudio);
+
+  const resetBtn = document.getElementById("reset-btn");
+  if (resetBtn) resetBtn.addEventListener("click", handleResetRequest);
+
+  if (state.confirmReset) {
+    const cancelBtn = document.getElementById("reset-cancel");
+    if (cancelBtn) cancelBtn.addEventListener("click", handleResetCancel);
+    const confirmBtn = document.getElementById("reset-confirm");
+    if (confirmBtn) confirmBtn.addEventListener("click", handleResetConfirm);
+    return; // don't attach phase handlers when in confirm mode
+  }
 
   if (state.phase === "setup") {
     document.getElementById("start-btn").addEventListener("click", handleStart);
@@ -2256,7 +2325,23 @@ function handlePlayAgain() {
   state.lastPicked = null;
   state.mapPlaced = [];
   state.mapEvaluated = false;
+  state.confirmReset = false;
   render();
+}
+
+function handleResetRequest() {
+  state.confirmReset = true;
+  render();
+}
+
+function handleResetCancel() {
+  state.confirmReset = false;
+  render();
+}
+
+function handleResetConfirm() {
+  // Same effect as Play Again, but invoked mid-game
+  handlePlayAgain();
 }
 
 /* ---------- MAP HANDLERS ---------- */
