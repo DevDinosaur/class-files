@@ -1,0 +1,3310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>Bible Expeditions — A Bible Journey Game</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=IM+Fell+English+SC&display=swap" rel="stylesheet">
+<style>
+  /* =========================================================
+     THEME TOKENS
+     ========================================================= */
+  :root {
+    --ink: #2b1d0e;
+    --ink-soft: #4a3520;
+    --parchment: #f0e3c6;
+    --parchment-dark: #d9c396;
+    --parchment-shadow: #b89a68;
+    --gold: #c9a34f;
+    --gold-bright: #e8c878;
+    --seal-red: #8b2c1a;
+    --seal-red-dark: #5a1a0f;
+    --moss: #4a6b3a;
+    --moss-bright: #6d9656;
+    --leather: #8b4513;
+    --ember: #d97a3b;
+    --shadow: rgba(43, 29, 14, 0.35);
+
+    --font-display: 'Cinzel', 'Trajan Pro', serif;
+    --font-accent: 'IM Fell English SC', 'Palatino', serif;
+    --font-body: 'EB Garamond', 'Garamond', serif;
+
+    --radius: 4px;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+    font-family: var(--font-body);
+    color: var(--ink);
+    font-size: 18px;
+    line-height: 1.55;
+  }
+
+  body {
+    /* Layered parchment: warm base + radial blotches + subtle noise via gradients */
+    background-color: var(--parchment);
+    background-image:
+      radial-gradient(ellipse at 20% 10%, rgba(139,69,19,0.12) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 30%, rgba(184,154,104,0.3) 0%, transparent 55%),
+      radial-gradient(ellipse at 30% 80%, rgba(139,44,26,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse at 90% 90%, rgba(43,29,14,0.15) 0%, transparent 55%),
+      radial-gradient(circle at 50% 50%, rgba(240,227,198,1) 0%, rgba(217,195,150,1) 100%);
+    background-attachment: scroll;
+    padding: 12px;
+    overflow-x: hidden;
+  }
+
+  /* Faint paper grain using layered linear gradients */
+  body::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.35;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(43,29,14,0.025) 0 1px, transparent 1px 3px),
+      repeating-linear-gradient(90deg, rgba(43,29,14,0.02) 0 1px, transparent 1px 4px);
+    mix-blend-mode: multiply;
+    z-index: 0;
+  }
+
+  #app {
+    max-width: 680px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* =========================================================
+     TYPOGRAPHY
+     ========================================================= */
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    color: var(--ink);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    margin: 0;
+  }
+
+  h1 { font-size: 2rem; line-height: 1.1; }
+  h2 { font-size: 1.5rem; line-height: 1.15; }
+  h3 { font-size: 1.15rem; letter-spacing: 0.12em; text-transform: uppercase; }
+
+  .eyebrow {
+    font-family: var(--font-accent);
+    font-size: 0.85rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--seal-red);
+    margin-bottom: 8px;
+  }
+
+  p { margin: 0 0 14px 0; }
+
+  /* =========================================================
+     EXPEDITION BAR (progress + audio toggle)
+     ========================================================= */
+  .expedition-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+    background: linear-gradient(180deg, rgba(139,69,19,0.08), rgba(139,69,19,0.02));
+    border: 1px solid var(--parchment-shadow);
+    border-radius: var(--radius);
+  }
+
+  .progress-trail {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .trail-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .trail-labels {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+  }
+
+  .trail-node {
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
+    border-radius: 50%;
+    border: 2px solid var(--ink-soft);
+    background: rgba(255,255,255,0.3);
+    display: grid;
+    place-items: center;
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 0.75rem;
+    color: var(--ink-soft);
+    position: relative;
+    transition: all 0.4s var(--ease);
+  }
+
+  .trail-node.completed {
+    background: var(--moss);
+    border-color: var(--moss);
+    color: var(--parchment);
+  }
+  .trail-node.completed::after {
+    content: '✓';
+    font-size: 0.85rem;
+  }
+  .trail-node.completed .node-num {
+    display: none;
+  }
+
+  .trail-node.active {
+    background: var(--seal-red);
+    border-color: var(--seal-red-dark);
+    color: var(--parchment);
+    box-shadow: 0 0 0 3px rgba(139,44,26,0.2), 0 2px 6px rgba(43,29,14,0.3);
+    animation: activeNodePulse 2.4s ease-in-out infinite;
+  }
+
+  .trail-node.upcoming {
+    border-style: dashed;
+    border-color: var(--seal-red);
+    color: var(--seal-red);
+  }
+
+  @keyframes activeNodePulse {
+    0%, 100% { box-shadow: 0 0 0 3px rgba(139,44,26,0.2), 0 2px 6px rgba(43,29,14,0.3); }
+    50%      { box-shadow: 0 0 0 6px rgba(139,44,26,0.08), 0 2px 6px rgba(43,29,14,0.3); }
+  }
+
+  .trail-line {
+    flex: 1;
+    height: 2px;
+    background-image: linear-gradient(90deg, var(--ink-soft) 50%, transparent 50%);
+    background-size: 6px 2px;
+    background-repeat: repeat-x;
+    opacity: 0.5;
+    min-width: 8px;
+  }
+
+  .trail-line.completed {
+    background-image: linear-gradient(90deg, var(--moss), var(--moss));
+    opacity: 1;
+  }
+
+  .trail-label {
+    text-align: center;
+    font-family: var(--font-accent);
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+  }
+
+  .trail-label.active {
+    color: var(--seal-red);
+    font-weight: 700;
+  }
+
+  .trail-label.completed {
+    color: var(--moss);
+  }
+
+  .expedition-controls {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .audio-toggle {
+    width: 40px;
+    height: 40px;
+    min-height: 40px;
+    padding: 0;
+    font-size: 1rem;
+    border-radius: 50%;
+    background: linear-gradient(180deg, var(--parchment), var(--parchment-dark));
+    color: var(--ink);
+    border: 1px solid var(--ink-soft);
+    box-shadow: 0 2px 4px rgba(43,29,14,0.2);
+    letter-spacing: 0;
+    position: relative;
+  }
+
+  .audio-toggle.on {
+    background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+    border-color: var(--leather);
+    color: var(--ink);
+  }
+
+  .audio-toggle.on::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    border: 1px solid var(--gold);
+    opacity: 0.5;
+    animation: audioRing 2s ease-in-out infinite;
+  }
+
+  .reset-btn {
+    width: 40px;
+    height: 40px;
+    min-height: 40px;
+    padding: 0;
+    font-size: 1.25rem;
+    border-radius: 50%;
+    background: linear-gradient(180deg, var(--parchment), var(--parchment-dark));
+    color: var(--ink-soft);
+    border: 1px solid var(--ink-soft);
+    box-shadow: 0 2px 4px rgba(43,29,14,0.2);
+    letter-spacing: 0;
+    line-height: 1;
+  }
+
+  .reset-btn:hover:not(:disabled) {
+    background: linear-gradient(180deg, #c98574, var(--seal-red));
+    color: var(--parchment);
+    border-color: var(--seal-red-dark);
+  }
+
+  @keyframes audioRing {
+    0%, 100% { transform: scale(1); opacity: 0.5; }
+    50%      { transform: scale(1.12); opacity: 0; }
+  }
+
+  @media (max-width: 420px) {
+    .trail-node { width: 22px; height: 22px; min-width: 22px; font-size: 0.7rem; }
+    .trail-label { font-size: 0.6rem; letter-spacing: 0.08em; }
+    .audio-toggle, .reset-btn { width: 36px; height: 36px; min-height: 36px; }
+    .reset-btn { font-size: 1.1rem; }
+  }
+
+  /* =========================================================
+     SCORE HEADER
+     ========================================================= */
+  .score-header {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 18px;
+    padding: 14px 12px;
+    background: linear-gradient(180deg, rgba(139,44,26,0.08) 0%, rgba(139,44,26,0.02) 100%);
+    border-top: 2px solid var(--seal-red-dark);
+    border-bottom: 2px solid var(--seal-red-dark);
+    position: relative;
+  }
+
+  .score-header::before,
+  .score-header::after {
+    content: '✦';
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--gold);
+    font-size: 0.9rem;
+  }
+  .score-header::before { left: 8px; }
+  .score-header::after { right: 8px; }
+
+  .score-card {
+    text-align: center;
+    padding: 8px 4px;
+    position: relative;
+  }
+
+  .score-card .name {
+    font-family: var(--font-accent);
+    font-size: 0.8rem;
+    letter-spacing: 0.15em;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .score-card .points {
+    font-family: var(--font-display);
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: var(--ink);
+    line-height: 1;
+    margin-top: 2px;
+  }
+
+  .score-card.flash {
+    animation: scoreFlash 0.9s var(--ease);
+  }
+
+  @keyframes scoreFlash {
+    0%   { transform: scale(1);    text-shadow: none; background: transparent; }
+    20%  { transform: scale(1.18); background: rgba(201,163,79,0.4); }
+    100% { transform: scale(1);    background: transparent; }
+  }
+
+  /* =========================================================
+     FRAMED CONTENT CARDS
+     ========================================================= */
+  .frame {
+    position: relative;
+    background: linear-gradient(180deg, rgba(240,227,198,0.6), rgba(217,195,150,0.85));
+    border: 1px solid var(--parchment-shadow);
+    padding: 28px 22px;
+    box-shadow:
+      0 2px 0 rgba(255,255,255,0.6) inset,
+      0 -2px 0 rgba(43,29,14,0.1) inset,
+      0 12px 30px -8px var(--shadow);
+    margin-bottom: 18px;
+  }
+
+  .frame::before,
+  .frame::after {
+    content: '';
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    border: 1px solid var(--gold);
+  }
+  .frame::before { top: 6px; left: 6px; border-right: none; border-bottom: none; }
+  .frame::after  { bottom: 6px; right: 6px; border-left: none; border-top: none; }
+
+  .frame-corners-extra::before,
+  .frame-corners-extra::after {
+    opacity: 0.7;
+  }
+
+  /* Divider flourish: quill stroke */
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 18px 0;
+    color: var(--gold);
+    font-size: 0.9rem;
+  }
+  .divider::before,
+  .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--ink-soft), transparent);
+    opacity: 0.4;
+  }
+
+  /* =========================================================
+     BUTTONS
+     ========================================================= */
+  button {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-size: 0.95rem;
+    color: var(--parchment);
+    background: linear-gradient(180deg, var(--ink-soft), var(--ink));
+    border: 1px solid var(--ink);
+    padding: 14px 22px;
+    min-height: 48px;
+    cursor: pointer;
+    border-radius: var(--radius);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.15) inset,
+      0 4px 10px -2px rgba(43,29,14,0.4);
+    transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease), filter 0.15s var(--ease);
+  }
+
+  button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    filter: brightness(1.1);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.2) inset,
+      0 6px 16px -2px rgba(43,29,14,0.5);
+  }
+
+  button:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+
+  button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  button.btn-gold {
+    background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+    color: var(--ink);
+    border-color: var(--leather);
+  }
+
+  button.btn-seal {
+    background: linear-gradient(180deg, #a8341f, var(--seal-red-dark));
+    border-color: var(--seal-red-dark);
+  }
+
+  button.btn-ghost {
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid var(--ink-soft);
+    box-shadow: none;
+  }
+
+  button.btn-ghost:hover:not(:disabled) {
+    background: rgba(43,29,14,0.08);
+  }
+
+  /* =========================================================
+     SETUP SCREEN
+     ========================================================= */
+  .title-wrap {
+    text-align: center;
+    padding: 32px 16px 20px;
+  }
+
+  .title-wrap .tag {
+    font-family: var(--font-accent);
+    letter-spacing: 0.4em;
+    font-size: 0.8rem;
+    color: var(--seal-red);
+    margin-bottom: 14px;
+  }
+
+  .title-wrap h1 {
+    font-size: 2.6rem;
+    line-height: 1.05;
+    font-weight: 900;
+    color: var(--ink);
+    text-shadow: 0 1px 0 rgba(255,255,255,0.4);
+  }
+
+  .title-wrap .sub {
+    font-family: var(--font-accent);
+    font-style: normal;
+    font-size: 0.95rem;
+    letter-spacing: 0.2em;
+    color: var(--ink-soft);
+    margin-top: 12px;
+  }
+
+  .compass {
+    display: flex;
+    justify-content: center;
+    margin: 16px 0;
+  }
+
+  .compass svg {
+    animation: compassTurn 40s linear infinite;
+  }
+
+  @keyframes compassTurn {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+
+  .field label {
+    display: block;
+    font-family: var(--font-accent);
+    font-size: 0.85rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+
+  .field input {
+    width: 100%;
+    font-family: var(--font-body);
+    font-size: 1.15rem;
+    padding: 12px 14px;
+    min-height: 48px;
+    background: rgba(255,255,255,0.4);
+    border: 1px solid var(--parchment-shadow);
+    border-radius: var(--radius);
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .field input:focus {
+    border-color: var(--seal-red);
+    background: rgba(255,255,255,0.6);
+  }
+
+  .field {
+    margin-bottom: 14px;
+    position: relative;
+  }
+
+  .field label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .optional-tag {
+    font-family: var(--font-body);
+    font-style: italic;
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
+    text-transform: none;
+    color: var(--ink-soft);
+    opacity: 0.7;
+  }
+
+  .remove-slot {
+    margin-left: auto;
+    width: 24px;
+    height: 24px;
+    min-height: 24px;
+    padding: 0;
+    font-size: 1rem;
+    line-height: 1;
+    background: transparent;
+    color: var(--ink-soft);
+    border: 1px solid var(--ink-soft);
+    border-radius: 50%;
+    box-shadow: none;
+    letter-spacing: 0;
+    text-transform: none;
+    font-family: var(--font-body);
+    font-weight: normal;
+  }
+
+  .remove-slot:hover:not(:disabled) {
+    background: var(--seal-red);
+    color: var(--parchment);
+    border-color: var(--seal-red);
+    transform: none;
+    filter: none;
+    box-shadow: none;
+  }
+
+  /* =========================================================
+     JOURNEY SELECT SCREEN
+     ========================================================= */
+  .journey-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 4px 0 6px;
+  }
+
+  .journey-card {
+    /* Override the default heavy button styling */
+    display: grid;
+    grid-template-columns: 44px 1fr 24px;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    text-align: left;
+    text-transform: none;
+    letter-spacing: normal;
+    padding: 16px 16px;
+    min-height: 72px;
+    font-family: var(--font-body);
+    font-weight: 400;
+    color: var(--ink);
+    background: linear-gradient(180deg, rgba(255,255,255,0.45), rgba(217,195,150,0.65));
+    border: 2px solid var(--parchment-shadow);
+    border-radius: var(--radius);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.5) inset,
+      0 4px 12px -4px var(--shadow);
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s var(--ease);
+  }
+
+  .journey-card:hover:not(:disabled) {
+    transform: translateY(-2px);
+    border-color: var(--seal-red);
+    background: linear-gradient(180deg, rgba(255,255,255,0.55), rgba(232,200,120,0.5));
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.6) inset,
+      0 8px 18px -4px var(--shadow);
+    filter: none;
+  }
+
+  .journey-card:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  .journey-card-num {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 1.05rem;
+    letter-spacing: 0.05em;
+    color: var(--parchment);
+    background: linear-gradient(180deg, var(--seal-red), var(--seal-red-dark));
+    border: 2px solid var(--seal-red-dark);
+    box-shadow: 0 2px 4px rgba(43,29,14,0.25);
+  }
+
+  .journey-card-body {
+    min-width: 0;
+  }
+
+  .journey-card-title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.2rem;
+    letter-spacing: 0.06em;
+    color: var(--ink);
+    line-height: 1.15;
+  }
+
+  .journey-card-sub {
+    font-family: var(--font-accent);
+    font-size: 0.7rem;
+    letter-spacing: 0.25em;
+    color: var(--seal-red);
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  .journey-card-tag {
+    font-family: var(--font-body);
+    font-style: italic;
+    font-size: 0.92rem;
+    line-height: 1.4;
+    color: var(--ink-soft);
+    margin-top: 6px;
+  }
+
+  .journey-card-arrow {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--seal-red);
+    transition: transform 0.2s var(--ease);
+  }
+
+  .journey-card:hover:not(:disabled) .journey-card-arrow {
+    transform: translateX(4px);
+  }
+
+  @media (max-width: 420px) {
+    .journey-card { padding: 14px 12px; gap: 10px; grid-template-columns: 38px 1fr 20px; }
+    .journey-card-num { width: 38px; height: 38px; font-size: 0.95rem; }
+    .journey-card-title { font-size: 1.08rem; }
+    .journey-card-tag { font-size: 0.88rem; }
+  }
+
+  /* =========================================================
+     DISCOVERY SCREEN
+     ========================================================= */
+  .discovery-hero {
+    text-align: center;
+    margin-bottom: 8px;
+  }
+
+  .cycle-num {
+    font-family: var(--font-accent);
+    font-size: 0.8rem;
+    letter-spacing: 0.4em;
+    color: var(--seal-red);
+    margin-bottom: 8px;
+  }
+
+  .discovery-hero h2 {
+    font-size: 1.9rem;
+    color: var(--ink);
+  }
+
+  .narrative {
+    font-family: var(--font-body);
+    font-size: 1.1rem;
+    line-height: 1.7;
+    color: var(--ink);
+    margin: 16px 0;
+  }
+
+  .narrative::first-letter {
+    font-family: var(--font-display);
+    font-size: 3rem;
+    font-weight: 900;
+    float: left;
+    line-height: 0.9;
+    padding-right: 10px;
+    padding-top: 4px;
+    color: var(--seal-red);
+  }
+
+  /* Scripture scroll */
+  .scripture {
+    position: relative;
+    margin: 20px -8px;
+    padding: 22px 28px 22px 28px;
+    background:
+      linear-gradient(180deg, rgba(201,163,79,0.15), rgba(201,163,79,0.05)),
+      linear-gradient(180deg, #ecd9a6, #d9bf7f);
+    border-top: 1px solid var(--gold);
+    border-bottom: 1px solid var(--gold);
+    box-shadow:
+      0 2px 0 rgba(255,255,255,0.3) inset,
+      0 -2px 0 rgba(0,0,0,0.08) inset;
+    font-family: var(--font-body);
+    font-style: italic;
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: var(--ink);
+  }
+
+  .scripture::before,
+  .scripture::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 20px;
+    background:
+      radial-gradient(ellipse at center, #8a6e38 0%, #5d4a22 100%);
+    box-shadow:
+      inset 0 0 6px rgba(0,0,0,0.4),
+      2px 0 6px rgba(0,0,0,0.15);
+  }
+  .scripture::before { left: -8px; border-radius: 2px 0 0 2px; }
+  .scripture::after  { right: -8px; border-radius: 0 2px 2px 0; }
+
+  .scripture .ref {
+    display: block;
+    font-family: var(--font-accent);
+    font-style: normal;
+    font-size: 0.8rem;
+    letter-spacing: 0.3em;
+    text-align: right;
+    color: var(--seal-red);
+    margin-top: 10px;
+  }
+
+  /* Field note — leather tag */
+  .field-note {
+    margin: 18px 0;
+    padding: 14px 18px 14px 50px;
+    background: linear-gradient(180deg, rgba(74,107,58,0.18), rgba(74,107,58,0.08));
+    border-left: 4px solid var(--moss);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    position: relative;
+    font-family: var(--font-body);
+    font-size: 1rem;
+    line-height: 1.5;
+    color: var(--ink);
+  }
+
+  .field-note::before {
+    content: '❊';
+    position: absolute;
+    left: 16px;
+    top: 12px;
+    font-size: 1.4rem;
+    color: var(--moss);
+  }
+
+  .field-note .label {
+    display: block;
+    font-family: var(--font-accent);
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    color: var(--moss);
+    margin-bottom: 4px;
+  }
+
+  .centered-actions {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 18px;
+    flex-wrap: wrap;
+  }
+
+  /* =========================================================
+     CHALLENGE / QUESTION SCREEN
+     ========================================================= */
+  .q-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+  }
+
+  .q-header .meta {
+    font-family: var(--font-accent);
+    font-size: 0.8rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+
+  .q-header .stage {
+    font-family: var(--font-accent);
+    font-size: 0.75rem;
+    letter-spacing: 0.25em;
+    color: var(--seal-red);
+  }
+
+  .question-text {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 1.4rem;
+    line-height: 1.3;
+    color: var(--ink);
+    margin: 10px 0 18px;
+  }
+
+  /* Timer */
+  .timer {
+    height: 10px;
+    background: rgba(43,29,14,0.15);
+    border: 1px solid var(--ink-soft);
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 16px;
+  }
+
+  .timer-fill {
+    height: 100%;
+    width: 100%;
+    background: var(--moss-bright);
+    transition: width 0.1s linear, background 0.4s var(--ease);
+    border-radius: 20px;
+  }
+
+  .timer.warn .timer-fill { background: var(--gold-bright); }
+  .timer.danger .timer-fill {
+    background: var(--seal-red);
+    animation: urgentPulse 0.6s ease-in-out infinite alternate;
+  }
+
+  @keyframes urgentPulse {
+    from { box-shadow: 0 0 0 0 rgba(139,44,26,0.6); }
+    to   { box-shadow: 0 0 12px 4px rgba(139,44,26,0.7); }
+  }
+
+  .timer-label {
+    text-align: center;
+    font-family: var(--font-accent);
+    font-size: 0.75rem;
+    letter-spacing: 0.3em;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+
+  /* Answer grid */
+  .answer-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .answer-btn {
+    font-family: var(--font-body);
+    font-size: 1.05rem;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0.02em;
+    color: var(--ink);
+    background: linear-gradient(180deg, rgba(255,255,255,0.35), rgba(217,195,150,0.6));
+    border: 2px solid var(--parchment-shadow);
+    padding: 16px 14px;
+    min-height: 72px;
+    text-align: left;
+    line-height: 1.35;
+    cursor: pointer;
+    border-radius: var(--radius);
+    position: relative;
+    overflow: hidden;
+    transition: all 0.2s var(--ease);
+    box-shadow: 0 2px 6px -2px var(--shadow);
+  }
+
+  .answer-btn .letter {
+    display: inline-block;
+    font-family: var(--font-display);
+    font-weight: 900;
+    color: var(--seal-red);
+    margin-right: 8px;
+    font-size: 1.1rem;
+  }
+
+  .answer-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    border-color: var(--seal-red);
+    filter: brightness(1.05);
+  }
+
+  .answer-btn.correct {
+    background: linear-gradient(180deg, #d4e5c3, #a8cb8d);
+    border-color: var(--moss);
+    color: var(--ink);
+    animation: correctGlow 0.6s var(--ease);
+  }
+
+  .answer-btn.wrong {
+    background: linear-gradient(180deg, #e8b8a8, #c98574);
+    border-color: var(--seal-red);
+    color: var(--ink);
+  }
+
+  .answer-btn.correct .letter { color: var(--moss); }
+  .answer-btn.wrong .letter   { color: var(--seal-red-dark); }
+
+  @keyframes correctGlow {
+    0%   { box-shadow: 0 0 0 0 rgba(74,107,58,0); }
+    40%  { box-shadow: 0 0 18px 6px rgba(109,150,86,0.7); }
+    100% { box-shadow: 0 2px 6px -2px var(--shadow); }
+  }
+
+  .explanation {
+    padding: 14px 16px;
+    background: rgba(201,163,79,0.18);
+    border-left: 3px solid var(--gold);
+    margin: 12px 0;
+    font-family: var(--font-body);
+    font-size: 1.02rem;
+    line-height: 1.5;
+  }
+
+  .award-panel {
+    background: rgba(139,44,26,0.08);
+    border: 1px dashed var(--seal-red);
+    padding: 14px;
+    border-radius: var(--radius);
+    margin-top: 10px;
+  }
+
+  .award-panel .label {
+    text-align: center;
+    font-family: var(--font-accent);
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    color: var(--seal-red);
+    margin-bottom: 10px;
+  }
+
+  .award-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .award-grid button {
+    font-size: 0.85rem;
+    padding: 12px 6px;
+    min-height: 48px;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .award-grid button.awarded {
+    background: linear-gradient(180deg, var(--moss-bright), var(--moss));
+    color: var(--parchment);
+    border-color: var(--moss);
+  }
+
+  /* =========================================================
+     MAP CHALLENGE
+     ========================================================= */
+  .map-challenge {
+    margin-top: 10px;
+  }
+
+  .map-board {
+    position: relative;
+    width: 100%;
+    padding-top: 95%; /* aspect ratio wrapper for SVG */
+    background:
+      radial-gradient(ellipse at 60% 40%, rgba(201,163,79,0.25) 0%, transparent 65%),
+      linear-gradient(135deg, #e8d4a3, #c9ae7a);
+    border: 1px solid var(--leather);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: 0 4px 18px -6px var(--shadow);
+  }
+
+  .map-board svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .map-city {
+    cursor: pointer;
+    transition: transform 0.2s var(--ease);
+  }
+
+  .map-city circle.pin {
+    fill: var(--seal-red);
+    stroke: var(--parchment);
+    stroke-width: 1;
+    transition: fill 0.2s, r 0.2s;
+  }
+
+  .map-city.placed circle.pin {
+    fill: var(--moss);
+  }
+
+  .map-city.start circle.pin {
+    fill: var(--ink);
+  }
+
+  .map-city:hover circle.pin {
+    r: 5.5;
+  }
+
+  .map-city text {
+    font-family: var(--font-accent);
+    font-size: 5px;
+    fill: var(--ink);
+    letter-spacing: 0.4px;
+    paint-order: stroke;
+    stroke: rgba(240,227,198,0.9);
+    stroke-width: 1;
+    stroke-linejoin: round;
+  }
+
+  .map-city .order-num {
+    font-family: var(--font-display);
+    font-weight: 900;
+    fill: var(--ink);
+    stroke: rgba(240,227,198,0.9);
+    stroke-width: 1;
+    paint-order: stroke;
+    font-size: 5px;
+    letter-spacing: 0;
+    text-anchor: start;
+    dominant-baseline: central;
+  }
+
+  .map-instructions {
+    text-align: center;
+    font-family: var(--font-accent);
+    letter-spacing: 0.2em;
+    font-size: 0.9rem;
+    color: var(--ink-soft);
+    margin-top: 10px;
+  }
+
+  .map-sequence {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    margin: 12px 0;
+  }
+
+  .map-sequence .slot {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: rgba(43,29,14,0.08);
+    border: 1px dashed var(--ink-soft);
+    border-radius: 20px;
+    font-family: var(--font-accent);
+    letter-spacing: 0.15em;
+    font-size: 0.85rem;
+    min-height: 34px;
+  }
+
+  .map-sequence .slot.filled {
+    background: rgba(74,107,58,0.18);
+    border: 1px solid var(--moss);
+  }
+
+  .map-sequence .slot.correct {
+    background: rgba(74,107,58,0.35);
+    border: 1px solid var(--moss);
+  }
+
+  .map-sequence .slot.incorrect {
+    background: rgba(139,44,26,0.25);
+    border: 1px solid var(--seal-red);
+  }
+
+  .map-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+
+  /* =========================================================
+     CHECKPOINT / TRANSITION SCREEN
+     ========================================================= */
+  .checkpoint {
+    text-align: center;
+    padding: 50px 20px;
+  }
+
+  .checkpoint .banner {
+    font-family: var(--font-accent);
+    font-size: 0.85rem;
+    letter-spacing: 0.45em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 14px;
+    opacity: 0;
+    animation: fadeInUp 0.6s var(--ease) 0.2s forwards;
+  }
+
+  .checkpoint h2 {
+    font-size: 2.2rem;
+    color: var(--ink);
+    margin-bottom: 8px;
+    opacity: 0;
+    animation: fadeInUp 0.6s var(--ease) 0.5s forwards;
+  }
+
+  .checkpoint .subtitle {
+    font-family: var(--font-body);
+    font-style: italic;
+    font-size: 1.15rem;
+    color: var(--ink-soft);
+    margin-bottom: 30px;
+    opacity: 0;
+    animation: fadeInUp 0.6s var(--ease) 0.8s forwards;
+  }
+
+  .pin-drop {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+    opacity: 0;
+    animation: pinDropIn 0.9s var(--ease) 1s forwards;
+  }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes pinDropIn {
+    0%   { opacity: 0; transform: translateY(-40px) scale(0.6); }
+    60%  { opacity: 1; transform: translateY(4px) scale(1.05); }
+    80%  { transform: translateY(-2px) scale(0.98); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .pin-drop svg {
+    filter: drop-shadow(0 4px 6px rgba(43,29,14,0.4));
+  }
+
+  .checkpoint-actions {
+    margin-top: 30px;
+    opacity: 0;
+    animation: fadeInUp 0.6s var(--ease) 1.6s forwards;
+  }
+
+  /* =========================================================
+     FINAL / PODIUM SCREEN
+     ========================================================= */
+  .podium-wrap {
+    text-align: center;
+    padding: 24px 12px;
+  }
+
+  .podium-wrap .eyebrow {
+    margin-bottom: 6px;
+  }
+
+  .podium-wrap h2 {
+    font-size: 2rem;
+    margin-bottom: 24px;
+  }
+
+  .podium {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    align-items: end;
+    gap: 12px;
+    max-width: 560px;
+    margin: 0 auto 30px;
+  }
+
+  .podium-spot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .medal {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 1.6rem;
+    color: var(--ink);
+    box-shadow:
+      inset 0 -3px 6px rgba(0,0,0,0.25),
+      inset 0 3px 6px rgba(255,255,255,0.4),
+      0 4px 12px rgba(43,29,14,0.3);
+    border: 3px solid var(--ink);
+  }
+
+  .medal.gold   { background: radial-gradient(circle at 35% 30%, #f7dd9a, var(--gold), #8f6a1f); }
+  .medal.silver { background: radial-gradient(circle at 35% 30%, #f2f2f2, #c8c8c8, #7f7f7f); }
+  .medal.bronze { background: radial-gradient(circle at 35% 30%, #e2b08a, #b5793e, #6a3f18); }
+  .medal.iron   { background: radial-gradient(circle at 35% 30%, #c0c0c0, #888888, #4a4a4a); color: var(--parchment); }
+
+  .podium-spot .player-name {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    font-size: 1rem;
+    color: var(--ink);
+    text-align: center;
+    min-height: 1.2em;
+  }
+
+  .podium-spot .player-score {
+    font-family: var(--font-accent);
+    letter-spacing: 0.2em;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+  }
+
+  .podium-block {
+    width: 100%;
+    background: linear-gradient(180deg, var(--parchment-dark), var(--parchment-shadow));
+    border: 1px solid var(--leather);
+    border-bottom: none;
+    box-shadow: inset 0 4px 0 rgba(255,255,255,0.3);
+    display: grid;
+    place-items: center;
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 1.4rem;
+    color: var(--ink);
+    letter-spacing: 0.08em;
+    overflow: hidden;
+    transform-origin: bottom;
+    transform: scaleY(0);
+    animation-fill-mode: forwards;
+    animation-timing-function: cubic-bezier(0.34, 1.2, 0.64, 1);
+    animation-name: riseBlock;
+  }
+
+  .podium-block .block-label {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: blockLabelIn 0.5s var(--ease) forwards;
+  }
+
+  @keyframes riseBlock {
+    to { transform: scaleY(1); }
+  }
+
+  @keyframes blockLabelIn {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .podium-block.first  { height: 130px; animation-duration: 1.1s; animation-delay: 2.2s; }
+  .podium-block.second { height: 100px; animation-duration: 0.95s; animation-delay: 1.3s; }
+  .podium-block.third  { height: 75px;  animation-duration: 0.8s; animation-delay: 0.5s; }
+  .podium-block.fourth { height: 55px;  animation-duration: 0.7s; animation-delay: 0.3s; }
+
+  .podium-block.first  .block-label { animation-delay: 3.2s; }
+  .podium-block.second .block-label { animation-delay: 2.2s; }
+  .podium-block.third  .block-label { animation-delay: 1.2s; }
+  .podium-block.fourth .block-label { animation-delay: 0.9s; }
+
+  /* 2-player layout: faster reveal since there's only silver and gold */
+  .podium.players-2 { grid-template-columns: 1fr 1fr; max-width: 420px; }
+  .podium.players-2 .podium-block.second { animation-delay: 0.4s; animation-duration: 0.9s; }
+  .podium.players-2 .podium-block.first  { animation-delay: 1.4s; animation-duration: 1.0s; }
+  .podium.players-2 .podium-block.second .block-label { animation-delay: 1.3s; }
+  .podium.players-2 .podium-block.first  .block-label { animation-delay: 2.3s; }
+  .podium.players-2 .rank-second .medal,
+  .podium.players-2 .rank-second .player-name,
+  .podium.players-2 .rank-second .player-score { animation-delay: 1.3s; }
+  .podium.players-2 .rank-first .medal { animation-delay: 2.4s; }
+  .podium.players-2 .rank-first .player-name,
+  .podium.players-2 .rank-first .player-score { animation-delay: 2.6s; }
+
+  /* 4-player layout: 4 columns, climactic reveal still ends with 1st */
+  .podium.players-4 { grid-template-columns: repeat(4, 1fr); }
+  .podium.players-4 .rank-fourth .medal,
+  .podium.players-4 .rank-fourth .player-name,
+  .podium.players-4 .rank-fourth .player-score {
+    opacity: 0;
+    transform: translateY(-16px);
+    animation: medalDrop 0.6s cubic-bezier(0.34, 1.6, 0.64, 1) forwards;
+    animation-delay: 1.0s;
+  }
+  /* Shift other ranks slightly later so 4th lands first, then 3rd, 2nd, 1st */
+  .podium.players-4 .rank-third  .medal,
+  .podium.players-4 .rank-third  .player-name,
+  .podium.players-4 .rank-third  .player-score { animation-delay: 1.9s; }
+  .podium.players-4 .rank-second .medal,
+  .podium.players-4 .rank-second .player-name,
+  .podium.players-4 .rank-second .player-score { animation-delay: 2.9s; }
+  .podium.players-4 .rank-first  .medal { animation-delay: 4.0s; }
+  .podium.players-4 .rank-first  .player-name,
+  .podium.players-4 .rank-first  .player-score { animation-delay: 4.2s; }
+
+  .podium.players-4 .podium-block.third  { animation-delay: 1.0s; }
+  .podium.players-4 .podium-block.second { animation-delay: 1.9s; }
+  .podium.players-4 .podium-block.first  { animation-delay: 2.9s; animation-duration: 1.1s; }
+  .podium.players-4 .podium-block.fourth .block-label { animation-delay: 1.0s; }
+  .podium.players-4 .podium-block.third  .block-label { animation-delay: 1.8s; }
+  .podium.players-4 .podium-block.second .block-label { animation-delay: 2.8s; }
+  .podium.players-4 .podium-block.first  .block-label { animation-delay: 4.0s; }
+
+  .podium-spot .medal,
+  .podium-spot .player-name,
+  .podium-spot .player-score {
+    opacity: 0;
+    transform: translateY(-16px);
+    animation: medalDrop 0.6s cubic-bezier(0.34, 1.6, 0.64, 1) forwards;
+  }
+
+  @keyframes medalDrop {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .podium-spot.rank-third  .medal,
+  .podium-spot.rank-third  .player-name,
+  .podium-spot.rank-third  .player-score { animation-delay: 1.4s; }
+
+  .podium-spot.rank-second .medal,
+  .podium-spot.rank-second .player-name,
+  .podium-spot.rank-second .player-score { animation-delay: 2.4s; }
+
+  .podium-spot.rank-first .medal {
+    animation-delay: 3.4s;
+    animation-name: medalDropGlow;
+    animation-duration: 1.1s;
+  }
+  .podium-spot.rank-first .player-name,
+  .podium-spot.rank-first .player-score {
+    animation-delay: 3.6s;
+  }
+
+  @keyframes medalDropGlow {
+    0%   { opacity: 0; transform: translateY(-16px); filter: brightness(1) drop-shadow(0 0 0 transparent); }
+    55%  { opacity: 1; transform: translateY(0); filter: brightness(1.25) drop-shadow(0 0 16px var(--gold-bright)); }
+    100% { opacity: 1; transform: translateY(0); filter: brightness(1) drop-shadow(0 0 6px var(--gold)); }
+  }
+
+  /* =========================================================
+     ANIMATIONS (generic)
+     ========================================================= */
+  .animate-in {
+    animation: slideUpFade 0.55s var(--ease) both;
+  }
+
+  @keyframes slideUpFade {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .stagger > * { opacity: 0; animation: slideUpFade 0.55s var(--ease) both; }
+  .stagger > *:nth-child(1) { animation-delay: 0.05s; }
+  .stagger > *:nth-child(2) { animation-delay: 0.18s; }
+  .stagger > *:nth-child(3) { animation-delay: 0.30s; }
+  .stagger > *:nth-child(4) { animation-delay: 0.42s; }
+  .stagger > *:nth-child(5) { animation-delay: 0.54s; }
+  .stagger > *:nth-child(6) { animation-delay: 0.66s; }
+
+  /* Very small screens */
+  @media (max-width: 420px) {
+    body { padding: 6px; font-size: 17px; }
+    h1 { font-size: 1.7rem; }
+    .title-wrap h1 { font-size: 2.1rem; }
+    .frame { padding: 20px 16px; }
+    .scripture { padding: 18px 22px; margin-left: -4px; margin-right: -4px; }
+    .question-text { font-size: 1.2rem; }
+    .answer-btn { font-size: 1rem; padding: 14px 12px; min-height: 64px; }
+    .score-card .name { font-size: 0.72rem; }
+    .score-card .points { font-size: 1.5rem; }
+    .medal { width: 54px; height: 54px; font-size: 1.3rem; }
+    .podium-block.first  { height: 110px; }
+    .podium-block.second { height: 85px; }
+    .podium-block.third  { height: 65px; }
+    .podium-block.fourth { height: 48px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<script>
+/* =========================================================
+   GAME DATA
+   ========================================================= */
+const JOURNEYS = [
+{
+  id: "conversion",
+  title: "Saul's Journey",
+  subtitle: "Acts 8 · 9 · Galatians 1",
+  menuTagline: "From hunter to hunted. A Pharisee discovers he has been persecuting the One he claimed to serve.",
+  cycleLabels: ["Hunter", "Road", "New Man", "Escape"],
+  transitionLabels: ["Damascus Road", "The City Walls", "Over the Wall", "Tarsus and Beyond"],
+  setupBlurb: "Two to four explorers will chase the story of a man who thought he was hunting God and discovered that God was hunting him.",
+  setupFooter: "FOUR STATIONS · ONE ROAD · ONE CHANGED MAN",
+  finalSubtitle: "From Jerusalem to Damascus, to Arabia, and on to Tarsus. You followed the road of a changed man.",
+  finalScripture: {
+    text: "\u201CBut I do not count my life of any value nor as precious to myself, if only I may finish my course and the ministry that I received from the Lord Jesus, to testify to the gospel of the grace of God.\u201D",
+    ref: "Acts 20:24"
+  },
+  cycles: [
+  {
+    title: "The Hunter",
+    subtitle: "Cycle I — Before the Road",
+    narrative:
+      "Before anyone called him Paul, Saul was a rising star among the Pharisees, trained in Jerusalem under the famous rabbi Gamaliel. When Stephen was stoned for preaching Jesus, Saul stood there and approved. That day lit a fire in him. He launched a door-to-door campaign, hauling men and women off to prison. In his own mind, he was defending God.",
+    scripture: {
+      text: "\u201CBut Saul was ravaging the church. Entering house after house, he dragged off men and women and committed them to prison.\u201D",
+      ref: "Acts 8:3"
+    },
+    fieldNote: {
+      label: "Field Note",
+      text: "The Greek word for \u201Cravaging\u201D (lumainomai) was used for a wild animal mauling its prey. Luke is not describing tidy arrests. He is describing a predator."
+    },
+    questions: [
+      {
+        q: "At Stephen's stoning, what was Saul's role?",
+        type: "mc",
+        options: [
+          "He threw the first stone",
+          "He held the coats of the witnesses",
+          "He was away in Damascus",
+          "He was preaching in the temple"
+        ],
+        correct: 1,
+        explain: "Acts 7:58 says the witnesses laid their coats at the feet of a young man named Saul. He did not throw stones. He approved."
+      },
+      {
+        q: "True or False: Saul trained in Jerusalem under the rabbi Gamaliel.",
+        type: "tf",
+        options: ["True", "False"],
+        correct: 0,
+        explain: "Paul himself says so in Acts 22:3. Gamaliel was one of the most respected rabbis of his generation."
+      },
+      {
+        q: "According to Acts 8:3, where did Saul go looking for believers?",
+        type: "mc",
+        options: [
+          "Only the temple courts",
+          "Only the synagogues",
+          "House to house",
+          "Only in Damascus"
+        ],
+        correct: 2,
+        explain: "Saul went house to house. He was not waiting for believers to show up. He was hunting them where they lived."
+      }
+    ]
+  },
+  {
+    title: "The Road",
+    subtitle: "Cycle II — Damascus Road",
+    narrative:
+      "Saul got official letters from the high priest. Any believer he found in the synagogues of Damascus, he could drag back to Jerusalem in chains. He set out north. Somewhere near the city, a light from heaven flashed around him and knocked him flat. A voice said, \u201CSaul, Saul, why are you persecuting me?\u201D He stood up blind. For three days he sat in the dark. No food. No water.",
+    scripture: {
+      text: "\u201CSaul, Saul, why are you persecuting me?\u201D He asked, \u201CWho are you, Lord?\u201D And He said, \u201CI am Jesus, whom you are persecuting.\u201D",
+      ref: "Acts 9:4–5"
+    },
+    fieldNote: {
+      label: "Field Note",
+      text: "Damascus is roughly 135 miles from Jerusalem. That is a 5 to 7 day walk. Saul had that long to be sure he was right, and then one moment to discover he was wrong."
+    },
+    questions: [
+      {
+        q: "Who did the voice from the light say Saul was persecuting?",
+        type: "mc",
+        options: ["Stephen", "Gamaliel", "Jesus", "An angel of the Lord"],
+        correct: 2,
+        explain: "Jesus identifies himself with his people. When Saul attacked Christians, he was attacking Jesus himself."
+      },
+      {
+        q: "How many days was Saul blind after the vision?",
+        type: "mc",
+        options: ["One day", "Three days", "Seven days", "Forty days"],
+        correct: 1,
+        explain: "Three days of darkness. A man who thought he could see everything learns he has been blind the whole time."
+      },
+      {
+        q: "True or False: Saul kept eating and drinking while he was blind.",
+        type: "tf",
+        options: ["True", "False"],
+        correct: 1,
+        explain: "Acts 9:9 says for three days he was without sight, and did not eat or drink. This was a fast of shock and repentance."
+      }
+    ]
+  },
+  {
+    title: "The New Man",
+    subtitle: "Cycle III — Sight and Baptism",
+    narrative:
+      "A disciple named Ananias was living in Damascus, minding his own business. Then Jesus spoke to him in a vision: go to Straight Street, find a man named Saul, and lay hands on him. Ananias was terrified. He knew exactly who Saul was. But he obeyed. When he laid his hands on Saul, something like scales fell away. Saul was baptized, ate his first meal in three days, and immediately began preaching Jesus in the synagogues.",
+    scripture: {
+      text: "\u201CImmediately he proclaimed Jesus in the synagogues, saying, \u2018He is the Son of God.\u2019\u201D",
+      ref: "Acts 9:20"
+    },
+    fieldNote: {
+      label: "Field Note",
+      text: "Straight Street in Damascus still exists. Its Latin name is Via Recta. It has been a major road for over two thousand years, and tourists can walk it today."
+    },
+    questions: [
+      {
+        q: "Who did God send to lay hands on Saul and heal his sight?",
+        type: "mc",
+        options: ["Barnabas", "Peter", "Ananias", "Philip"],
+        correct: 2,
+        explain: "Ananias, a disciple in Damascus. He was not an apostle. He was just a faithful believer who obeyed a scary assignment."
+      },
+      {
+        q: "When Saul's sight came back, what fell from his eyes?",
+        type: "mc",
+        options: ["Tears", "Something like scales", "A thin veil", "Bandages"],
+        correct: 1,
+        explain: "Scales. Luke is a doctor and uses a precise word. The physical healing mirrors what is happening in Saul's soul."
+      },
+      {
+        q: "What did Saul do right after his baptism?",
+        type: "mc",
+        options: [
+          "Traveled to Jerusalem",
+          "Preached Jesus in the synagogues",
+          "Sailed home to Tarsus",
+          "Fasted another forty days"
+        ],
+        correct: 1,
+        explain: "He went straight into the synagogues where he had planned to arrest believers, and preached the name he had come to destroy."
+      }
+    ]
+  },
+  {
+    title: "The Escape",
+    subtitle: "Cycle IV — Basket, Barnabas, Tarsus",
+    narrative:
+      "Saul's preaching enraged the Damascus Jews. They plotted to kill him and watched the gates day and night. So the disciples lowered him over the wall in a basket. He made it to Jerusalem, but the Christians there were afraid: was this a trick? Barnabas vouched for him. Soon new plots started, and the church shipped Saul off to Tarsus, his hometown. In Galatians 1, Paul adds a detail Luke skips: between Damascus and Jerusalem, he spent time in Arabia.",
+    scripture: {
+      text: "\u201CBut his disciples took him by night and let him down through an opening in the wall, lowering him in a basket.\u201D",
+      ref: "Acts 9:25"
+    },
+    fieldNote: {
+      label: "Field Note",
+      text: "The Greek word for basket here is spuris, a big woven hamper. It is the same word used for the seven baskets of leftovers after Jesus fed the four thousand. Saul, the great persecutor, escaped in a lunch basket."
+    },
+    questions: [
+      {
+        q: "How did Saul escape from Damascus?",
+        type: "mc",
+        options: [
+          "Disguised as a merchant",
+          "Through a secret tunnel",
+          "Lowered in a basket over the city wall",
+          "On a fast horse at dawn"
+        ],
+        correct: 2,
+        explain: "The mighty hunter of Christians makes his grand exit dangling over a wall in a woven basket. God has a sense of humor."
+      },
+      {
+        q: "Who stood up for Saul when the Jerusalem disciples did not trust him?",
+        type: "mc",
+        options: ["Peter", "James", "Ananias", "Barnabas"],
+        correct: 3,
+        explain: "Barnabas. His name means \u201Cson of encouragement,\u201D and he earns it. Without him, Saul might never have been received."
+      },
+      {
+        q: "Where did the church send Saul after Jerusalem got dangerous?",
+        type: "mc",
+        options: ["Antioch", "Tarsus", "Rome", "Caesarea"],
+        correct: 1,
+        explain: "Tarsus, his hometown. He disappears from the story for several years before Barnabas tracks him down again."
+      },
+      {
+        q: "True or False: According to Galatians 1, Saul went straight to Jerusalem after his conversion.",
+        type: "tf",
+        options: ["True", "False"],
+        correct: 1,
+        explain: "Galatians 1:17 says he first went to Arabia, then returned to Damascus. Only three years later did he head to Jerusalem."
+      }
+    ],
+    mapChallenge: true
+  }
+  ],
+  map: {
+    /* Cities for map challenge. Coords are in a 0..100 viewBox. Sequence excludes the starting Jerusalem. */
+    cities: [
+      { id: "tarsus",     name: "TARSUS",     x: 28, y: 18 },
+      { id: "damascus",   name: "DAMASCUS",   x: 68, y: 38 },
+      { id: "jerusalem2", name: "JERUSALEM",  x: 55, y: 58 },
+      { id: "arabia",     name: "ARABIA",     x: 72, y: 78 }
+    ],
+    start: { id: "jerusalem1", name: "JERUSALEM (START)", x: 48, y: 55 },
+    correctOrder: ["damascus", "arabia", "jerusalem2", "tarsus"],
+    instruction: "Tap the cities in the order Saul visited them after his conversion. Jerusalem is the starting point.",
+    explanation: "The full route: Jerusalem \u2192 Damascus \u2192 Arabia \u2192 Jerusalem (3 years later) \u2192 Tarsus. Paul spent time in Arabia between his conversion and his first Jerusalem visit (Galatians 1:17\u201318).",
+    decorations: [
+      { kind: "label", x: 12, y: 8,  text: "ASIA MINOR",         size: 3.5, italic: false },
+      { kind: "label", x: 72, y: 96, text: "NABATEA",            size: 3.5, italic: false },
+      { kind: "label", x: 40, y: 96, text: ". . . desert . . .", size: 2.8, italic: true  }
+    ]
+  }
+},
+{
+  id: "first-mission",
+  title: "Paul's First Mission",
+  subtitle: "Acts 13 \u00b7 14",
+  menuTagline: "Out of Antioch, across Cyprus, into the highlands. A sorcerer goes blind, a crowd turns deadly, a man left for dead gets back up.",
+  cycleLabels: ["Sending", "Sorcerer", "Pulpit", "Stoned"],
+  transitionLabels: ["The Ship to Cyprus", "Across the Island", "Into the Highlands", "Back Home to Antioch"],
+  setupBlurb: "Two to four explorers will follow Paul and Barnabas on their first journey out from Antioch \u2014 over the sea, into the mountains, and through one of the toughest moments in all of Acts.",
+  setupFooter: "FOUR STATIONS \u00b7 ONE ROAD \u00b7 ONE BOLD MISSION",
+  finalSubtitle: "From Antioch to Cyprus, into the Galatian highlands, and home again. You walked the road that planted the first churches.",
+  finalScripture: {
+    text: "\u201CWhen they had preached the gospel to that city and had made many disciples, they returned to Lystra and to Iconium and to Antioch, strengthening the souls of the disciples, encouraging them to continue in the faith.\u201D",
+    ref: "Acts 14:21\u201322"
+  },
+  cycles: [
+    {
+      title: "The Sending",
+      subtitle: "Cycle I \u2014 Antioch and Cyprus",
+      narrative:
+        "It started in Antioch of Syria, the church that had become a base camp for everything new God was doing among the Gentiles. While the prophets and teachers were worshiping and fasting, the Holy Spirit said: set apart Barnabas and Saul for the work I have called them to. The leaders fasted, prayed, laid hands on them, and sent them off. They sailed first to Cyprus, Barnabas\u2019s home country, and began preaching in the synagogues of Salamis on the eastern coast. John (also called Mark) went along as their helper.",
+      scripture: {
+        text: "\u201CSet apart for me Barnabas and Saul for the work to which I have called them.\u201D",
+        ref: "Acts 13:2"
+      },
+      fieldNote: {
+        label: "Field Note",
+        text: "Antioch of Syria was the third-largest city in the Roman Empire after Rome and Alexandria. It was a multicultural port and the place where, according to Acts 11:26, the disciples were first called Christians."
+      },
+      questions: [
+        {
+          q: "Who was set apart with Saul to be sent on this mission?",
+          type: "mc",
+          options: ["Peter", "Silas", "Barnabas", "Timothy"],
+          correct: 2,
+          explain: "Barnabas. The Holy Spirit named both of them in Acts 13:2. Barnabas had vouched for Saul years earlier in Jerusalem, and now they were sent out together."
+        },
+        {
+          q: "What island did they sail to first?",
+          type: "mc",
+          options: ["Crete", "Cyprus", "Malta", "Patmos"],
+          correct: 1,
+          explain: "Cyprus. It was Barnabas\u2019s home country (Acts 4:36), so he was leading them through familiar territory."
+        },
+        {
+          q: "True or False: Paul and Barnabas had a helper with them on this trip.",
+          type: "tf",
+          options: ["True", "False"],
+          correct: 0,
+          explain: "True. John, also called Mark, went with them as their assistant (Acts 13:5). He will become an important name later, both for what he does next and for what Paul does about it."
+        }
+      ]
+    },
+    {
+      title: "The Sorcerer",
+      subtitle: "Cycle II \u2014 Paphos",
+      narrative:
+        "They worked their way west across Cyprus and reached Paphos, the Roman administrative capital. The proconsul there, Sergius Paulus, was an intelligent man who summoned Barnabas and Saul because he wanted to hear the word of God. But a Jewish magician named Bar-Jesus, also called Elymas, kept opposing them, trying to turn the proconsul away from the faith. Saul \u2014 who from this point in Acts is called Paul \u2014 looked straight at him, called him a son of the devil, and said the hand of the Lord was against him. Elymas went blind on the spot and started groping for someone to lead him by the hand.",
+      scripture: {
+        text: "\u201CAnd now, behold, the hand of the Lord is upon you, and you will be blind and unable to see the sun for a time.\u201D",
+        ref: "Acts 13:11"
+      },
+      fieldNote: {
+        label: "Field Note",
+        text: "Acts 13:9 is the moment Luke quietly drops the name Saul for good and starts calling him Paul. From here on, the Hebrew name disappears. Paul has stepped into his Roman name and his Roman mission."
+      },
+      questions: [
+        {
+          q: "What was the sorcerer\u2019s name?",
+          type: "mc",
+          options: ["Simon", "Elymas", "Demas", "Apollos"],
+          correct: 1,
+          explain: "Elymas (also called Bar-Jesus). He was trying to keep the proconsul from listening to the gospel, and Paul confronted him head-on."
+        },
+        {
+          q: "What happened to Elymas after Paul confronted him?",
+          type: "mc",
+          options: [
+            "He was killed instantly",
+            "He repented and was baptized",
+            "He was struck blind and led around by the hand",
+            "He fled the city"
+          ],
+          correct: 2,
+          explain: "Acts 13:11 says immediately mist and darkness fell on him, and he went around seeking people to lead him by the hand. Paul \u2014 who knew exactly what three days of blindness felt like \u2014 was the instrument."
+        },
+        {
+          q: "Who was the Roman proconsul who believed?",
+          type: "mc",
+          options: ["Felix", "Festus", "Sergius Paulus", "Gallio"],
+          correct: 2,
+          explain: "Sergius Paulus, the proconsul of Cyprus. Some scholars think Paul may have taken his Roman name in honor of this first high-status convert, but we cannot be sure."
+        }
+      ]
+    },
+    {
+      title: "The Pulpit and the Mob",
+      subtitle: "Cycle III \u2014 Pisidian Antioch",
+      narrative:
+        "From Cyprus they sailed north to Perga in Pamphylia. There John Mark left them and went back to Jerusalem, a quiet line in Acts 13:13 that will later cause a sharp argument between Paul and Barnabas. The two pressed on, climbing up into the highlands to Antioch of Pisidia. Paul preached one of his greatest sermons in the synagogue. The next Sabbath nearly the whole city showed up to hear them. The Jewish leaders, jealous, contradicted Paul and stirred up the influential people of the city. Paul and Barnabas turned to the Gentiles, and were eventually driven out of the district.",
+      scripture: {
+        text: "\u201CIt was necessary that the word of God be spoken first to you. Since you thrust it aside and judge yourselves unworthy of eternal life, behold, we are turning to the Gentiles.\u201D",
+        ref: "Acts 13:46"
+      },
+      fieldNote: {
+        label: "Field Note",
+        text: "Going from sea level at Perga up to the Anatolian plateau where Antioch of Pisidia sits is a brutal climb of more than 3,000 feet through bandit country. Some scholars think the \u201Cthorn in the flesh\u201D Paul mentions in Galatians may have been malaria he caught in the lowlands, and that he pushed up into the mountains to escape it."
+      },
+      questions: [
+        {
+          q: "Who left the missionary team at Perga and returned to Jerusalem?",
+          type: "mc",
+          options: ["Barnabas", "Silas", "John Mark", "Titus"],
+          correct: 2,
+          explain: "John Mark. Acts 13:13 just says he left. Paul will refuse to take him on the next journey because of it (Acts 15:38), splitting up the team."
+        },
+        {
+          q: "What did Paul and Barnabas do when the Jewish leaders contradicted them in Antioch of Pisidia?",
+          type: "mc",
+          options: [
+            "Quietly left the city",
+            "Turned to the Gentiles",
+            "Took the case to the synagogue council",
+            "Wrote a letter to Jerusalem"
+          ],
+          correct: 1,
+          explain: "They turned to the Gentiles (Acts 13:46). This is a hinge moment. The gospel goes wide, and many believe."
+        },
+        {
+          q: "True or False: Paul and Barnabas were welcomed and stayed peacefully in Antioch of Pisidia.",
+          type: "tf",
+          options: ["True", "False"],
+          correct: 1,
+          explain: "False. Acts 13:50 says they were driven out of the district. They shook the dust off their feet and moved on to Iconium."
+        }
+      ]
+    },
+    {
+      title: "Stoned and Standing",
+      subtitle: "Cycle IV \u2014 Lystra, Derbe, and the Long Way Home",
+      narrative:
+        "In Lystra Paul healed a man who had been crippled from birth. The crowd erupted, calling Barnabas \u201CZeus\u201D and Paul \u201CHermes,\u201D and the local priest of Zeus tried to bring oxen to sacrifice to them. Paul barely stopped them. Then opponents arrived from Antioch and Iconium, turned that same crowd, and stoned Paul. They dragged his body outside the city gates assuming he was dead. The disciples gathered around him \u2014 and he stood up and walked back into the city. The next day he and Barnabas left for Derbe. Then, instead of going home the easy way, they swung back through every dangerous city, strengthening the disciples and appointing elders in each new church.",
+      scripture: {
+        text: "\u201CBut when the disciples gathered about him, he rose up and entered the city, and on the next day he went on with Barnabas to Derbe.\u201D",
+        ref: "Acts 14:20"
+      },
+      fieldNote: {
+        label: "Field Note",
+        text: "Stoning was meant to kill. The Lystra crowd was not roughing Paul up. They dragged his body out the gates because they thought he was a corpse. He got up, walked back into the city that had just executed him, and left the next morning to keep preaching. Then he came back through Lystra on the return trip."
+      },
+      questions: [
+        {
+          q: "In Lystra, what did the crowd call Paul and Barnabas after the healing?",
+          type: "mc",
+          options: [
+            "Sons of God",
+            "Zeus and Hermes",
+            "Apollo and Dionysus",
+            "Castor and Pollux"
+          ],
+          correct: 1,
+          explain: "Barnabas they called Zeus, and Paul they called Hermes because he was the chief speaker (Acts 14:12). The priest of Zeus brought oxen to sacrifice. Paul barely stopped the worship in time."
+        },
+        {
+          q: "What did the crowd in Lystra eventually do to Paul?",
+          type: "mc",
+          options: [
+            "Carried him on their shoulders",
+            "Locked him in prison",
+            "Stoned him and dragged him out of the city, thinking he was dead",
+            "Demanded a sign from heaven"
+          ],
+          correct: 2,
+          explain: "Same crowd, completely flipped. Acts 14:19 says they stoned him, dragged him out of the city, and supposed he was dead. He got up the next day and walked to Derbe."
+        },
+        {
+          q: "What did Paul and Barnabas do in each of the new churches on the return trip?",
+          type: "mc",
+          options: [
+            "Built synagogues",
+            "Wrote letters",
+            "Appointed elders in every church",
+            "Baptized everyone again"
+          ],
+          correct: 2,
+          explain: "Acts 14:23 says they appointed elders in every church, with prayer and fasting, and committed them to the Lord. The churches were left under local leadership before Paul and Barnabas sailed home."
+        }
+      ],
+      mapChallenge: true
+    }
+  ],
+  map: {
+    /* Cities for first missionary journey map. Coords on a 0..100 viewBox. Starting point is Antioch of Syria. */
+    cities: [
+      { id: "salamis",   name: "SALAMIS",          x: 52, y: 62 },
+      { id: "paphos",    name: "PAPHOS",           x: 30, y: 67 },
+      { id: "antiochP",  name: "ANTIOCH (PISIDIA)", x: 26, y: 28 },
+      { id: "iconium",   name: "ICONIUM",          x: 45, y: 24 },
+      { id: "lystra",    name: "LYSTRA",           x: 53, y: 32 },
+      { id: "derbe",     name: "DERBE",            x: 67, y: 33 }
+    ],
+    start: { id: "antiochSyria", name: "ANTIOCH (SYRIA)", x: 82, y: 50 },
+    correctOrder: ["salamis", "paphos", "antiochP", "iconium", "lystra", "derbe"],
+    instruction: "Tap the cities in the order Paul and Barnabas visited them. Antioch of Syria is the starting point.",
+    explanation: "The outbound route: Antioch (Syria) \u2192 Salamis \u2192 Paphos \u2192 Perga \u2192 Antioch of Pisidia \u2192 Iconium \u2192 Lystra \u2192 Derbe. Then they retraced their steps through Lystra, Iconium, and Pisidian Antioch, sailed from Attalia, and came home to Antioch of Syria (Acts 14:21\u201326).",
+    decorations: [
+      { kind: "label", x: 8,  y: 10, text: "ASIA MINOR", size: 3.6, italic: false },
+      { kind: "label", x: 30, y: 78, text: "CYPRUS",     size: 3.4, italic: false },
+      { kind: "label", x: 80, y: 75, text: "SYRIA",      size: 3.4, italic: false },
+      { kind: "label", x: 22, y: 52, text: ". . . the Great Sea . . .", size: 2.6, italic: true }
+    ]
+  }
+},
+{
+  id: "second-mission",
+  title: "Paul's Second Mission",
+  subtitle: "Acts 15 \u00b7 16",
+  menuTagline: "A council in Jerusalem, a sharp argument with Barnabas, a vision in the night, and a luxury merchant who hosts the first church in Europe.",
+  cycleLabels: ["Council", "Split", "Vision", "Lydia"],
+  transitionLabels: ["Back to Antioch", "Through Cilicia", "Across the Aegean", "Onward to Corinth"],
+  setupBlurb: "Two to four explorers will follow Paul, Silas, and Timothy out of Antioch through a church council, a hard breakup, a strange detour, and across the sea to a continent that has never heard the gospel.",
+  setupFooter: "FOUR STATIONS \u00b7 ONE ROAD \u00b7 ONE OPEN DOOR",
+  finalSubtitle: "From Jerusalem to Antioch, across Asia Minor, over the Aegean to Macedonia, and on through Greece. You walked the road that brought the gospel to Europe.",
+  finalScripture: {
+    text: "\u201CDo not be afraid, but go on speaking and do not be silent, for I am with you, and no one will attack you to harm you, for I have many in this city who are my people.\u201D",
+    ref: "Acts 18:9\u201310"
+  },
+  cycles: [
+    {
+      title: "The Council",
+      subtitle: "Cycle I \u2014 Jerusalem",
+      narrative:
+        "Paul and Barnabas were back in Antioch after the first journey, telling the church everything God had done among the Gentiles. Then some teachers came down from Judea with a message that landed like a grenade: unless you are circumcised according to the law of Moses, you cannot be saved. Paul and Barnabas had no small dispute with them. The church sent the two of them up to Jerusalem to settle it. There Peter stood up and reminded everyone that God had already given the Holy Spirit to Gentiles without requiring the law. James proposed the verdict, and the apostles wrote a letter: do not burden the Gentiles. The door to the nations was officially open.",
+      scripture: {
+        text: "\u201CTherefore my judgment is that we should not trouble those of the Gentiles who turn to God.\u201D",
+        ref: "Acts 15:19"
+      },
+      fieldNote: {
+        label: "Field Note",
+        text: "The Jerusalem Council in Acts 15 may be the most important meeting in early church history. Without it, the church might have fractured into two: a Jewish church that kept the law of Moses, and a Gentile church that did not. Instead the apostles ruled that Gentiles do not have to become Jewish to follow Jesus. That single decision opened the door for everything Paul does next."
+      },
+      questions: [
+        {
+          q: "What did the teachers from Judea say Gentile believers had to do to be saved?",
+          type: "mc",
+          options: [
+            "Pay a temple tax",
+            "Be circumcised and keep the law of Moses",
+            "Move to Jerusalem",
+            "Sell all their possessions"
+          ],
+          correct: 1,
+          explain: "Acts 15:1 says they were teaching that unless you are circumcised according to the custom of Moses, you cannot be saved. Paul and Barnabas pushed back hard, and the church sent them to Jerusalem to settle it."
+        },
+        {
+          q: "Who was sent up from Antioch to Jerusalem to argue the case?",
+          type: "mc",
+          options: [
+            "Peter and John",
+            "Paul and Barnabas",
+            "Stephen and Philip",
+            "Timothy and Silas"
+          ],
+          correct: 1,
+          explain: "Paul and Barnabas, along with some others (Acts 15:2). They were the two who had just spent a year and a half with Gentile believers, so they were the right men to make the case."
+        },
+        {
+          q: "True or False: The Jerusalem council decided Gentile believers had to be circumcised.",
+          type: "tf",
+          options: ["True", "False"],
+          correct: 1,
+          explain: "False. The verdict, written down in a letter (Acts 15:19\u201329), was that Gentile believers were not to be burdened with the law. They were asked to abstain from a few things tied to idolatry and sexual immorality, but circumcision was off the table."
+        }
+      ]
+    },
+    {
+      title: "The Sharp Disagreement",
+      subtitle: "Cycle II \u2014 Antioch",
+      narrative:
+        "Some time after the council, Paul said to Barnabas: let us go back and visit the brothers in every city where we preached, and see how they are doing. Barnabas wanted to bring John Mark again. Paul refused. Mark had quit on them at Perga during the first journey, and Paul was not going to risk it twice. The argument got so sharp that Paul and Barnabas split. Barnabas took Mark and sailed back to Cyprus. Paul picked Silas, a leader in the Jerusalem church and a Roman citizen like himself, and headed overland through Syria and Cilicia, strengthening the churches as they went.",
+      scripture: {
+        text: "\u201CAnd there arose a sharp disagreement, so that they separated from each other. Barnabas took Mark with him and sailed away to Cyprus, but Paul chose Silas...\u201D",
+        ref: "Acts 15:39\u201340"
+      },
+      fieldNote: {
+        label: "Field Note",
+        text: "The Greek word for \u201Csharp disagreement\u201D (paroxysmos) is the root behind the English medical word \u201Cparoxysm,\u201D a sudden violent attack. This was not a polite difference of opinion. Luke is honest: two godly men got into a serious fight. And yet God used both teams. Barnabas and Mark went to Cyprus. Paul and Silas crossed Asia Minor. One mission became two. Years later Paul writes in 2 Timothy 4:11, \u201CGet Mark and bring him with you, for he is very useful to me for ministry.\u201D They were reconciled."
+      },
+      questions: [
+        {
+          q: "Who did Paul and Barnabas argue about taking on the next journey?",
+          type: "mc",
+          options: ["Timothy", "Silas", "John Mark", "Titus"],
+          correct: 2,
+          explain: "John Mark. Barnabas was Mark\u2019s cousin (Colossians 4:10), so he had a family reason to give Mark a second chance. Paul was not convinced."
+        },
+        {
+          q: "What had John Mark done on the first journey that bothered Paul?",
+          type: "mc",
+          options: [
+            "Stolen money from the team",
+            "Left them at Perga and went back to Jerusalem",
+            "Refused to preach to Gentiles",
+            "Denied Jesus under pressure"
+          ],
+          correct: 1,
+          explain: "Acts 13:13 says Mark left them at Perga and went back to Jerusalem. We do not know why. Paul calls it desertion in Acts 15:38, and refuses to risk it again."
+        },
+        {
+          q: "Who did Paul choose to take on the second journey instead of Barnabas?",
+          type: "mc",
+          options: ["Timothy", "Silas", "Apollos", "Luke"],
+          correct: 1,
+          explain: "Silas, also called Silvanus. He was a leader in the Jerusalem church (Acts 15:22) and a Roman citizen (Acts 16:37), which mattered more than once on this trip."
+        },
+        {
+          q: "True or False: Paul and John Mark stayed enemies for the rest of their lives.",
+          type: "tf",
+          options: ["True", "False"],
+          correct: 1,
+          explain: "False. Paul later writes in 2 Timothy 4:11 asking Timothy to bring Mark to him, \u201Cfor he is very useful to me for ministry.\u201D Barnabas\u2019s investment in his cousin paid off."
+        }
+      ]
+    },
+    {
+      title: "The Vision",
+      subtitle: "Cycle III \u2014 Lystra to Troas",
+      narrative:
+        "Paul and Silas crossed through Cilicia and came back to Lystra, the city where Paul had been stoned and left for dead on the first journey. There the disciples spoke highly of a young man named Timothy. His mother and grandmother were Jewish believers; his father was Greek. Paul wanted Timothy on the team, so he had him circumcised first so that Jews in the area would receive him. The three of them pushed west, but the Holy Spirit kept closing doors. Not Asia. Not Bithynia. They ended up at Troas on the western coast, out of road. That night Paul saw a vision: a man from Macedonia stood pleading, \u201CCome over to Macedonia and help us.\u201D At dawn they booked passage on a ship.",
+      scripture: {
+        text: "\u201CAnd a vision appeared to Paul in the night: a man of Macedonia was standing there, urging him and saying, \u2018Come over to Macedonia and help us.\u2019\u201D",
+        ref: "Acts 16:9"
+      },
+      fieldNote: {
+        label: "Field Note",
+        text: "The Spirit shut two doors before opening one. Paul tried to go into Asia (the province around Ephesus) and was forbidden. He tried Bithynia (north toward the Black Sea) and was forbidden again. Only at Troas, the very edge of Asia, did he get the vision that pointed him across the sea. Notice the pronoun shift at Acts 16:10: \u201Cwe sought to go on into Macedonia.\u201D Luke, the author of Acts, has just joined the team."
+      },
+      questions: [
+        {
+          q: "In what city did Paul meet Timothy?",
+          type: "mc",
+          options: ["Antioch", "Lystra", "Troas", "Philippi"],
+          correct: 1,
+          explain: "Lystra (Acts 16:1). This is the same city where Paul had been stoned and dragged out as dead on the first journey. Apparently he made some friends."
+        },
+        {
+          q: "What was unusual about Timothy\u2019s family background?",
+          type: "mc",
+          options: [
+            "His father was a Pharisee",
+            "His mother was Jewish but his father was Greek",
+            "He had no living parents",
+            "His whole family had been killed"
+          ],
+          correct: 1,
+          explain: "His mother and grandmother were faithful Jewish believers (2 Timothy 1:5). His father was Greek. To keep Timothy from being a sticking point for the Jews they would meet, Paul had him circumcised before they set out."
+        },
+        {
+          q: "In Paul\u2019s vision at Troas, who appeared and what did he say?",
+          type: "mc",
+          options: [
+            "An angel telling him to go to Rome",
+            "A man from Macedonia begging him to come help",
+            "Jesus sending him back to Jerusalem",
+            "A child telling him to preach to children"
+          ],
+          correct: 1,
+          explain: "A man from Macedonia, asking Paul to come help. Paul took it as God\u2019s call, and the next morning they sailed across the Aegean. The gospel was about to land in Europe for the first time."
+        },
+        {
+          q: "True or False: The Holy Spirit closed two other doors before pointing Paul toward Macedonia.",
+          type: "tf",
+          options: ["True", "False"],
+          correct: 0,
+          explain: "True. Acts 16:6\u20137 says they were forbidden by the Spirit to speak the word in Asia, and the Spirit of Jesus did not allow them to enter Bithynia. Only then did they reach Troas and the vision."
+        }
+      ]
+    },
+    {
+      title: "Lydia",
+      subtitle: "Cycle IV \u2014 Philippi",
+      narrative:
+        "The ship landed at Neapolis, and the team walked the few miles inland to Philippi, a Roman colony settled with Caesar\u2019s veterans. There was no synagogue in town, so on the Sabbath Paul went outside the city gate to the riverside, where some women had gathered to pray. One of them was a businesswoman from Thyatira named Lydia, a seller of purple cloth. As Paul spoke, the Lord opened her heart. She and her whole household were baptized that day, the very first converts on the European continent. Then she insisted: come stay at my house. The church in Philippi had its first home.",
+      scripture: {
+        text: "\u201COne who heard us was a woman named Lydia, from the city of Thyatira, a seller of purple goods, who was a worshiper of God. The Lord opened her heart to pay attention to what was said by Paul.\u201D",
+        ref: "Acts 16:14"
+      },
+      fieldNote: {
+        label: "Field Note",
+        text: "Purple dye in the ancient world came from a tiny gland in a sea snail called the Murex. It took thousands of snails to dye a single robe, which is why purple cloth cost more than gold by weight and was almost only worn by royalty and emperors. Lydia was not a small-time merchant. She was running a luxury business with a wealthy clientele, and God opened her heart to a traveling tentmaker. One businesswoman changed the direction of church history."
+      },
+      questions: [
+        {
+          q: "What did Lydia sell for a living?",
+          type: "mc",
+          options: ["Olive oil", "Purple cloth", "Spices", "Linen tents"],
+          correct: 1,
+          explain: "Purple cloth (Acts 16:14). In the ancient world purple dye was the most expensive luxury product going, almost only worn by royalty and the very rich. Lydia was running a serious business."
+        },
+        {
+          q: "Where was Lydia originally from?",
+          type: "mc",
+          options: ["Macedonia", "Thyatira", "Corinth", "Athens"],
+          correct: 1,
+          explain: "Thyatira, a city back in the Roman province of Asia (modern western Turkey). Thyatira was famous for its purple dye trade, so Lydia had set up shop in Philippi as part of a network."
+        },
+        {
+          q: "Where did Paul find Lydia and the other women on the Sabbath?",
+          type: "mc",
+          options: [
+            "In the synagogue",
+            "At a riverside outside the city gate",
+            "At the Roman forum",
+            "In the marketplace"
+          ],
+          correct: 1,
+          explain: "Outside the city gate at the riverside, where they were meeting for prayer. Roman colonies needed a minimum number of Jewish men to form a synagogue, and Philippi did not have it. So the believers gathered by the river."
+        },
+        {
+          q: "True or False: Lydia was the first person Paul baptized on the European continent.",
+          type: "tf",
+          options: ["True", "False"],
+          correct: 0,
+          explain: "True. Lydia and her household were the first converts in Europe (Acts 16:15). One businesswoman, baptized by a riverbank, and the gospel had crossed into a new continent."
+        }
+      ],
+      mapChallenge: true
+    }
+  ],
+  map: {
+    /* Cities for Paul's second journey. Coords on a 0..100 viewBox. Starting point is Antioch of Syria. */
+    cities: [
+      { id: "lystra2",      name: "LYSTRA",       x: 68, y: 45 },
+      { id: "troas",        name: "TROAS",        x: 42, y: 30 },
+      { id: "philippi",     name: "PHILIPPI",     x: 32, y: 16 },
+      { id: "thessalonica", name: "THESSALONICA", x: 22, y: 23 },
+      { id: "athens",       name: "ATHENS",       x: 28, y: 54 },
+      { id: "corinth",      name: "CORINTH",      x: 18, y: 60 }
+    ],
+    start: { id: "antiochSyria2", name: "ANTIOCH (SYRIA)", x: 90, y: 62 },
+    correctOrder: ["lystra2", "troas", "philippi", "thessalonica", "athens", "corinth"],
+    instruction: "Tap the cities in the order Paul visited them on the second journey. Antioch of Syria is the starting point.",
+    explanation: "The outbound route: Antioch (Syria) \u2192 through Cilicia \u2192 Lystra (where Timothy joined) \u2192 across Asia Minor \u2192 Troas (the vision) \u2192 across the Aegean to Philippi (Lydia) \u2192 Thessalonica \u2192 Berea \u2192 Athens (Mars Hill) \u2192 Corinth (18 months). Paul then sailed home through Ephesus and Caesarea, finishing back at Antioch (Acts 18:18\u201322).",
+    decorations: [
+      { kind: "label", x: 60, y: 9,  text: "ASIA MINOR", size: 3.4, italic: false },
+      { kind: "label", x: 16, y: 8,  text: "MACEDONIA", size: 3.2, italic: false },
+      { kind: "label", x: 8,  y: 76, text: "ACHAIA",    size: 3.2, italic: false },
+      { kind: "label", x: 88, y: 86, text: "SYRIA",     size: 3.3, italic: false },
+      { kind: "label", x: 36, y: 44, text: ". . . the Aegean Sea . . .", size: 2.5, italic: true }
+    ]
+  }
+}
+];
+
+/* Helper getters: pull from the currently-selected journey */
+function currentJourney() { return JOURNEYS[state.journeyIdx]; }
+function currentCycles()  { return currentJourney().cycles; }
+function currentMap()     { return currentJourney().map; }
+
+/* =========================================================
+   STATE
+   ========================================================= */
+const state = {
+  phase: "journeySelect",  // journeySelect | setup | discovery | challenge | transition | final
+  journeyIdx: 0,           // which JOURNEY the players have chosen
+  players: [
+    { name: "", score: 0 },
+    { name: "", score: 0 }
+  ],
+  setupSlots: 2,           // 2-4 player input slots shown on setup screen
+  cycleIdx: 0,
+  questionIdx: 0,
+  questionAnswered: false,
+  lockAnswers: false,
+  awardedFor: null,        // current question has been awarded (stores index)
+  timer: null,
+  timerValue: 20,
+  mapPlaced: [],           // ids placed so far
+  mapEvaluated: false,
+  audioOn: false,
+  confirmReset: false      // shows a "start over?" confirmation overlay
+};
+
+/* =========================================================
+   DECORATIVE SVGs
+   ========================================================= */
+function compassSvg(size = 88) {
+  return `
+  <svg width="${size}" height="${size}" viewBox="0 0 100 100" aria-hidden="true">
+    <defs>
+      <radialGradient id="cg" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#f7e6b8"/>
+        <stop offset="100%" stop-color="#c9a34f"/>
+      </radialGradient>
+    </defs>
+    <circle cx="50" cy="50" r="46" fill="url(#cg)" stroke="#2b1d0e" stroke-width="1.4"/>
+    <circle cx="50" cy="50" r="38" fill="none" stroke="#2b1d0e" stroke-width="0.6" stroke-dasharray="2 3"/>
+    <g stroke="#2b1d0e" stroke-width="1" fill="#2b1d0e">
+      <polygon points="50,10 54,50 50,48 46,50" fill="#8b2c1a"/>
+      <polygon points="50,90 46,50 50,52 54,50" fill="#2b1d0e"/>
+      <polygon points="10,50 50,46 48,50 50,54" fill="#2b1d0e"/>
+      <polygon points="90,50 50,54 52,50 50,46" fill="#2b1d0e"/>
+    </g>
+    <circle cx="50" cy="50" r="3" fill="#2b1d0e"/>
+    <text x="50" y="22" text-anchor="middle" font-family="Cinzel, serif" font-size="8" font-weight="700" fill="#2b1d0e">N</text>
+    <text x="50" y="84" text-anchor="middle" font-family="Cinzel, serif" font-size="8" font-weight="700" fill="#2b1d0e">S</text>
+    <text x="18" y="53" text-anchor="middle" font-family="Cinzel, serif" font-size="8" font-weight="700" fill="#2b1d0e">W</text>
+    <text x="82" y="53" text-anchor="middle" font-family="Cinzel, serif" font-size="8" font-weight="700" fill="#2b1d0e">E</text>
+  </svg>`;
+}
+
+function pinSvg(size = 72) {
+  return `
+  <svg width="${size}" height="${size * 1.3}" viewBox="0 0 60 78" aria-hidden="true">
+    <defs>
+      <radialGradient id="pg" cx="50%" cy="40%" r="55%">
+        <stop offset="0%" stop-color="#e8c878"/>
+        <stop offset="60%" stop-color="#c9a34f"/>
+        <stop offset="100%" stop-color="#8b6a1f"/>
+      </radialGradient>
+    </defs>
+    <path d="M30 76 Q10 45 10 28 a20 20 0 0 1 40 0 Q50 45 30 76 Z" fill="#8b2c1a" stroke="#2b1d0e" stroke-width="1.5"/>
+    <circle cx="30" cy="28" r="11" fill="url(#pg)" stroke="#2b1d0e" stroke-width="1.2"/>
+    <circle cx="30" cy="28" r="4" fill="#2b1d0e"/>
+  </svg>`;
+}
+
+/* =========================================================
+   RENDERING
+   ========================================================= */
+const app = document.getElementById("app");
+
+function render() {
+  stopTimer();
+  const noChrome = state.phase === "journeySelect" || state.phase === "setup";
+  const topBar = noChrome ? "" : renderExpeditionBar();
+  const scoreHeader = noChrome ? "" : renderScoreHeader();
+  let screen = "";
+
+  if (state.confirmReset && !noChrome) {
+    screen = renderResetConfirm();
+  } else if (state.phase === "journeySelect") screen = renderJourneySelect();
+  else if (state.phase === "setup")           screen = renderSetup();
+  else if (state.phase === "discovery")       screen = renderDiscovery();
+  else if (state.phase === "challenge")       screen = renderChallenge();
+  else if (state.phase === "transition")      screen = renderTransition();
+  else if (state.phase === "final")           screen = renderFinal();
+
+  app.innerHTML = topBar + scoreHeader + screen;
+  attachHandlers();
+}
+
+function getCycleStatus(i) {
+  if (state.phase === "setup" || state.phase === "journeySelect") return "future";
+  if (state.phase === "final") return "completed";
+  if (state.phase === "transition") {
+    if (i <= state.cycleIdx) return "completed";
+    if (i === state.cycleIdx + 1) return "upcoming";
+    return "future";
+  }
+  if (i < state.cycleIdx) return "completed";
+  if (i === state.cycleIdx) return "active";
+  return "future";
+}
+
+function renderExpeditionBar() {
+  const cycles = currentCycles();
+  const cycleLabels = currentJourney().cycleLabels;
+  const pinParts = [];
+  for (let i = 0; i < cycles.length; i++) {
+    const status = getCycleStatus(i);
+    pinParts.push(`<div class="trail-node ${status}"><span class="node-num">${i + 1}</span></div>`);
+    if (i < cycles.length - 1) {
+      const lineStatus = i < state.cycleIdx || (state.phase === "transition" && i <= state.cycleIdx) || state.phase === "final" ? "completed" : "";
+      pinParts.push(`<div class="trail-line ${lineStatus}"></div>`);
+    }
+  }
+
+  const labelParts = cycleLabels.map((lbl, i) => {
+    const status = getCycleStatus(i);
+    return `<div class="trail-label ${status}">${escapeHtml(lbl)}</div>`;
+  }).join("");
+
+  return `
+    <div class="expedition-bar">
+      <div class="progress-trail">
+        <div class="trail-row">${pinParts.join("")}</div>
+        <div class="trail-labels" style="grid-template-columns: repeat(${cycles.length}, 1fr);">${labelParts}</div>
+      </div>
+      <div class="expedition-controls">
+        <button class="audio-toggle ${state.audioOn ? 'on' : ''}" id="audio-toggle" aria-label="Toggle sound" title="${state.audioOn ? 'Sound on — tap to mute' : 'Sound off — tap to enable'}">♪</button>
+        ${state.phase === "final" ? "" : `<button class="reset-btn" id="reset-btn" aria-label="Start over" title="Start over">⟲</button>`}
+      </div>
+    </div>
+  `;
+}
+
+function renderScoreHeader() {
+  const n = state.players.length;
+  return `
+    <div class="score-header" id="score-header" style="grid-template-columns: repeat(${n}, 1fr);">
+      ${state.players.map((p, i) => `
+        <div class="score-card" data-score-idx="${i}">
+          <div class="name">${escapeHtml(p.name || "Player " + (i+1))}</div>
+          <div class="points">${p.score}</div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+/* ---------- JOURNEY SELECT ---------- */
+function renderJourneySelect() {
+  const cards = JOURNEYS.map((j, i) => `
+    <button class="journey-card" data-journey="${i}" aria-label="Choose ${escapeHtml(j.title)}">
+      <div class="journey-card-num">${toRoman(i + 1)}</div>
+      <div class="journey-card-body">
+        <div class="journey-card-title">${escapeHtml(j.title)}</div>
+        <div class="journey-card-sub">${escapeHtml(j.subtitle)}</div>
+        <div class="journey-card-tag">${escapeHtml(j.menuTagline)}</div>
+      </div>
+      <div class="journey-card-arrow" aria-hidden="true">→</div>
+    </button>
+  `).join("");
+
+  return `
+    <div class="title-wrap animate-in">
+      <div class="tag">An Expedition Game</div>
+      <div class="compass">${compassSvg(100)}</div>
+      <h1>Bible Expeditions</h1>
+      <div class="sub">Choose Your Journey</div>
+    </div>
+
+    <div class="frame stagger">
+      <div class="eyebrow">Three Roads, Three Stories</div>
+      <p style="font-style: italic; color: var(--ink-soft); margin-bottom: 18px;">
+        Pick the road you want to walk. Each journey has four stations, a closing map challenge, and a podium at the finish line.
+      </p>
+      <div class="journey-list">
+        ${cards}
+      </div>
+    </div>
+
+    <div class="divider"><span>\u2726</span></div>
+    <p style="text-align:center; font-family: var(--font-accent); letter-spacing: 0.25em; font-size: 0.8rem; color: var(--ink-soft);">SELECT A JOURNEY TO BEGIN</p>
+  `;
+}
+
+/* ---------- SETUP ---------- */
+function renderSetup() {
+  const j = currentJourney();
+  const ordinals = ["One", "Two", "Three", "Four"];
+  const slots = [];
+  for (let i = 0; i < state.setupSlots; i++) {
+    const isOptional = i >= 2;
+    const existing = state.players[i] ? escapeHtml(state.players[i].name) : "";
+    slots.push(`
+      <div class="field">
+        <label for="p${i+1}">
+          Traveler ${ordinals[i]}
+          ${isOptional ? '<span class="optional-tag">optional</span>' : ''}
+          ${isOptional ? `<button type="button" class="remove-slot" data-remove="${i}" aria-label="Remove this traveler">×</button>` : ''}
+        </label>
+        <input id="p${i+1}" type="text" maxlength="14" placeholder="Enter name" autocomplete="off" value="${existing}" />
+      </div>
+    `);
+  }
+
+  const canAdd = state.setupSlots < 4;
+
+  return `
+    <div class="title-wrap animate-in">
+      <div class="tag">An Expedition Game</div>
+      <div class="compass">${compassSvg(100)}</div>
+      <h1>${escapeHtml(j.title)}</h1>
+      <div class="sub">${escapeHtml(j.subtitle)}</div>
+      <div style="margin-top: 14px;">
+        <button id="back-to-journeys" class="btn-ghost" style="font-size: 0.7rem; padding: 6px 12px; min-height: 30px; letter-spacing: 0.15em;">\u2190 Choose a different journey</button>
+      </div>
+    </div>
+
+    <div class="frame stagger">
+      <div class="eyebrow">Name Your Travelers</div>
+      <p style="font-style: italic; color: var(--ink-soft); margin-bottom: 18px;">
+        ${escapeHtml(j.setupBlurb)}
+      </p>
+
+      ${slots.join("")}
+
+      ${canAdd ? `
+        <div style="text-align: center; margin: 6px 0 18px;">
+          <button id="add-slot" class="btn-ghost" style="font-size: 0.75rem; padding: 8px 14px; min-height: 36px; letter-spacing: 0.15em;">+ Add Another Traveler</button>
+        </div>
+      ` : '<div style="height: 8px;"></div>'}
+
+      <div class="centered-actions">
+        <button id="start-btn" class="btn-gold">Begin the Journey</button>
+      </div>
+    </div>
+
+    <div class="divider"><span>✦</span></div>
+    <p style="text-align:center; font-family: var(--font-accent); letter-spacing: 0.25em; font-size: 0.8rem; color: var(--ink-soft);">${escapeHtml(j.setupFooter)}</p>
+  `;
+}
+
+/* Roman numeral helper for journey cards */
+function toRoman(n) {
+  const map = ["", "I", "II", "III", "IV", "V", "VI"];
+  return map[n] || String(n);
+}
+
+/* ---------- DISCOVERY ---------- */
+function renderDiscovery() {
+  const c = currentCycles()[state.cycleIdx];
+  return `
+    <div class="frame frame-corners-extra stagger">
+      <div class="discovery-hero">
+        <div class="cycle-num">${escapeHtml(c.subtitle)}</div>
+        <h2>${escapeHtml(c.title)}</h2>
+      </div>
+
+      <div class="divider"><span>✦ ✦ ✦</span></div>
+
+      <p class="narrative">${escapeHtml(c.narrative)}</p>
+
+      <div class="scripture">
+        ${escapeHtml(c.scripture.text)}
+        <span class="ref">${escapeHtml(c.scripture.ref)}</span>
+      </div>
+
+      <div class="field-note">
+        <span class="label">${escapeHtml(c.fieldNote.label)}</span>
+        ${escapeHtml(c.fieldNote.text)}
+      </div>
+
+      <div class="centered-actions">
+        <button id="discovery-continue" class="btn-gold">Proceed to Challenge →</button>
+      </div>
+    </div>
+  `;
+}
+
+/* ---------- CHALLENGE ---------- */
+function renderChallenge() {
+  const c = currentCycles()[state.cycleIdx];
+  const questions = c.questions;
+  const isMapQuestion = c.mapChallenge && state.questionIdx === questions.length;
+
+  if (isMapQuestion) return renderMapChallenge();
+
+  const q = questions[state.questionIdx];
+  const total = questions.length + (c.mapChallenge ? 1 : 0);
+  const answered = state.questionAnswered;
+
+  const optsHtml = q.options.map((opt, i) => {
+    let cls = "answer-btn";
+    if (answered) {
+      if (i === q.correct) cls += " correct";
+      else if (state.lastPicked === i) cls += " wrong";
+    }
+    const letter = String.fromCharCode(65 + i);
+    return `
+      <button class="${cls}" data-answer="${i}" ${answered ? "disabled" : ""}>
+        <span class="letter">${letter}.</span>${escapeHtml(opt)}
+      </button>
+    `;
+  }).join("");
+
+  const n = state.players.length;
+  const awardHtml = answered ? `
+    <div class="explanation animate-in">${escapeHtml(q.explain)}</div>
+    <div class="award-panel animate-in">
+      <div class="label">${state.awardedFor !== null && state.awardedFor >= 0 ? "Tap again to undo · tap another to transfer" : "Who answered correctly?"}</div>
+      <div class="award-grid" style="grid-template-columns: repeat(${n}, 1fr);">
+        ${state.players.map((p, i) => `
+          <button data-award="${i}" class="${state.awardedFor === i ? 'awarded' : ''}">${escapeHtml(p.name || "Player " + (i+1))}</button>
+        `).join("")}
+      </div>
+      <div style="margin-top: 12px; text-align: center;">
+        <button id="no-award" class="btn-ghost" style="font-size: 0.75rem; padding: 8px 14px; min-height: 36px;">No one got it</button>
+        <button id="next-q" class="btn-gold" style="font-size: 0.85rem;">Next →</button>
+      </div>
+    </div>
+  ` : "";
+
+  const timerCls = state.timerValue <= 5
+    ? "timer danger"
+    : state.timerValue <= 10
+      ? "timer warn"
+      : "timer";
+
+  return `
+    <div class="frame animate-in">
+      <div class="q-header">
+        <div class="meta">Cycle ${state.cycleIdx + 1} · ${escapeHtml(c.title)}</div>
+        <div class="stage">${state.questionIdx + 1} / ${total}</div>
+      </div>
+
+      <div class="question-text">${escapeHtml(q.q)}</div>
+
+      <div class="timer-label" id="timer-label">${answered ? "REVEALED" : state.timerValue + " SECONDS"}</div>
+      <div class="${timerCls}" id="timer">
+        <div class="timer-fill" id="timer-fill" style="width: ${(state.timerValue / 20) * 100}%;"></div>
+      </div>
+
+      <div class="answer-grid stagger">
+        ${optsHtml}
+      </div>
+
+      ${awardHtml}
+
+      ${!answered ? `<div style="text-align:center; margin-top: 8px;">
+        <button id="reveal-btn" class="btn-ghost" style="font-size: 0.75rem; padding: 8px 14px; min-height: 36px;">Reveal Answer</button>
+      </div>` : ""}
+    </div>
+  `;
+}
+
+/* ---------- MAP CHALLENGE ---------- */
+function renderMapChallenge() {
+  const map = currentMap();
+  const cities = map.cities;
+  const correctOrder = map.correctOrder;
+  const startCity = map.start;
+  const placedIds = state.mapPlaced;
+  const evaluated = state.mapEvaluated;
+
+  const cityMarkers = cities.map(city => {
+    const idx = placedIds.indexOf(city.id);
+    const placed = idx !== -1;
+    let extraCls = placed ? "placed" : "";
+    return `
+      <g class="map-city ${extraCls}" data-city="${city.id}" transform="translate(${city.x}, ${city.y})">
+        <circle class="hit" r="10" fill="transparent"></circle>
+        <circle class="pin" r="4.5"></circle>
+        ${placed ? `<text class="order-num" x="8" y="0">${idx + 1}</text>` : ""}
+        <text x="0" y="-8" text-anchor="middle">${escapeHtml(city.name)}</text>
+      </g>
+    `;
+  }).join("");
+
+  const decorationsSvg = (map.decorations || []).map(d => {
+    if (d.kind === "label") {
+      return `<text x="${d.x}" y="${d.y}" font-family="IM Fell English SC, serif" font-size="${d.size}" fill="#8b4513" letter-spacing="0.6"${d.italic ? ' font-style="italic"' : ''}>${escapeHtml(d.text)}</text>`;
+    }
+    return "";
+  }).join("");
+
+  const sequenceHtml = Array.from({ length: correctOrder.length }, (_, i) => {
+    const id = placedIds[i];
+    const city = id ? cities.find(c => c.id === id) : null;
+    let cls = "slot";
+    if (city) cls += " filled";
+    if (evaluated && city) {
+      cls = "slot " + (id === correctOrder[i] ? "correct" : "incorrect");
+    }
+    return `<div class="${cls}">${i + 1}. ${city ? escapeHtml(city.name) : "\u2014"}</div>`;
+  }).join("");
+
+  const allPlaced = placedIds.length === correctOrder.length;
+  const c = currentCycles()[state.cycleIdx];
+  const total = c.questions.length + 1;
+
+  const correctCount = placedIds.filter((id, i) => id === correctOrder[i]).length;
+  const resultMsg = evaluated ? `
+    <div class="explanation animate-in">
+      <strong>${correctCount} of ${correctOrder.length} correct.</strong>
+      ${escapeHtml(map.explanation)}
+    </div>
+  ` : "";
+
+  const nPlayers = state.players.length;
+  const awardHtml = evaluated ? `
+    <div class="award-panel animate-in">
+      <div class="label">${state.awardedFor !== null && state.awardedFor >= 0 ? "Tap again to undo · tap another to transfer" : "Award the map challenge"}</div>
+      <div class="award-grid" style="grid-template-columns: repeat(${nPlayers}, 1fr);">
+        ${state.players.map((p, i) => `
+          <button data-award="${i}" class="${state.awardedFor === i ? 'awarded' : ''}">${escapeHtml(p.name || "Player " + (i+1))}</button>
+        `).join("")}
+      </div>
+      <div style="margin-top: 12px; text-align: center;">
+        <button id="no-award" class="btn-ghost" style="font-size: 0.75rem; padding: 8px 14px; min-height: 36px;">No one got it</button>
+        <button id="finish-cycle" class="btn-gold" style="font-size: 0.85rem;">Finish Cycle →</button>
+      </div>
+    </div>
+  ` : "";
+
+  return `
+    <div class="frame animate-in">
+      <div class="q-header">
+        <div class="meta">Map Challenge · The Full Route</div>
+        <div class="stage">${total} / ${total}</div>
+      </div>
+      <div class="question-text">${escapeHtml(map.instruction)}</div>
+
+      <div class="map-challenge">
+        <div class="map-board">
+          <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+            <!-- Decorative hand-drawn coast/desert lines -->
+            <g opacity="0.35" stroke="#5a3a18" stroke-width="0.2" fill="none">
+              <path d="M5 20 Q 30 25, 55 15 T 95 25" />
+              <path d="M10 70 Q 40 65, 65 75 T 98 70" />
+              <path d="M20 40 Q 50 35, 80 45" />
+            </g>
+            ${decorationsSvg}
+
+            <!-- Fixed start city -->
+            <g class="map-city start" transform="translate(${startCity.x}, ${startCity.y})">
+              <circle class="hit" r="10" fill="transparent"></circle>
+              <circle class="pin" r="5"></circle>
+              <text class="order-num" x="8" y="0">\u2605</text>
+              <text x="0" y="-9" text-anchor="middle">${escapeHtml(startCity.name)}</text>
+            </g>
+
+            <!-- Selectable cities -->
+            ${cityMarkers}
+          </svg>
+        </div>
+        <div class="map-instructions">TAP A CITY TO PLACE IT IN THE SEQUENCE</div>
+        <div class="map-sequence">${sequenceHtml}</div>
+        <div class="map-actions">
+          <button id="map-reset" class="btn-ghost" style="font-size: 0.75rem; padding: 10px 14px;">Reset</button>
+          <button id="map-check" class="btn-gold" style="font-size: 0.85rem;" ${allPlaced && !evaluated ? "" : "disabled"}>Check Route</button>
+        </div>
+        ${resultMsg}
+        ${awardHtml}
+      </div>
+    </div>
+  `;
+}
+
+/* ---------- TRANSITION ---------- */
+function renderTransition() {
+  const j = currentJourney();
+  const labels = j.transitionLabels;
+  const cycles = currentCycles();
+  const next = cycles[state.cycleIdx + 1];
+  const label = labels[state.cycleIdx] || "The Road Ahead";
+  const subtitle = next ? next.title + " begins..." : "";
+
+  return `
+    <div class="frame checkpoint">
+      <div class="banner">Checkpoint Reached</div>
+      <h2>${escapeHtml(label)}</h2>
+      <div class="subtitle">${escapeHtml(subtitle)}</div>
+      <div class="pin-drop">${pinSvg(84)}</div>
+      <div class="checkpoint-actions">
+        <button id="transition-continue" class="btn-gold">Continue the Journey →</button>
+      </div>
+    </div>
+  `;
+}
+
+/* ---------- RESET CONFIRMATION ---------- */
+function renderResetConfirm() {
+  return `
+    <div class="frame animate-in" style="border: 2px solid var(--seal-red);">
+      <div class="discovery-hero">
+        <div class="cycle-num" style="color: var(--seal-red);">⚠ Hold On</div>
+        <h2>Start Over?</h2>
+      </div>
+      <div class="divider"><span>✦</span></div>
+      <p style="text-align: center; font-family: var(--font-body); font-size: 1.1rem; color: var(--ink); margin-bottom: 8px;">
+        This will clear all current scores and return to the traveler setup screen.
+      </p>
+      <p style="text-align: center; font-family: var(--font-accent); font-size: 0.78rem; letter-spacing: 0.25em; color: var(--seal-red); margin-top: 6px; text-transform: uppercase;">
+        The Expedition Cannot Be Undone
+      </p>
+      <div class="centered-actions" style="margin-top: 22px;">
+        <button id="reset-cancel" class="btn-ghost">Keep Playing</button>
+        <button id="reset-confirm" class="btn-seal">Yes, Start Over</button>
+      </div>
+    </div>
+  `;
+}
+
+/* ---------- FINAL ---------- */
+function renderFinal() {
+  const sorted = state.players
+    .map((p, i) => ({ ...p, idx: i }))
+    .sort((a, b) => b.score - a.score);
+
+  const n = state.players.length;
+
+  const spot = (p, medalClass, medalText, blockClass, blockText, rankClass) => `
+    <div class="podium-spot ${rankClass}">
+      <div class="medal ${medalClass}">${medalText}</div>
+      <div class="player-name">${escapeHtml(p.name || "Traveler")}</div>
+      <div class="player-score">${p.score} pts</div>
+      <div class="podium-block ${blockClass}"><span class="block-label">${blockText}</span></div>
+    </div>
+  `;
+
+  let podiumHtml = "";
+  if (n === 2) {
+    // Gold on left, silver on right (winner gets the prime read position)
+    podiumHtml = `
+      <div class="podium players-2">
+        ${spot(sorted[0], "gold",   "I",  "first",  "1ST", "rank-first")}
+        ${spot(sorted[1], "silver", "II", "second", "2ND", "rank-second")}
+      </div>
+    `;
+  } else if (n === 3) {
+    podiumHtml = `
+      <div class="podium players-3">
+        ${spot(sorted[1], "silver", "II",  "second", "2ND", "rank-second")}
+        ${spot(sorted[0], "gold",   "I",   "first",  "1ST", "rank-first")}
+        ${spot(sorted[2], "bronze", "III", "third",  "3RD", "rank-third")}
+      </div>
+    `;
+  } else {
+    // 4 players — order: 4th, 2nd, 1st, 3rd (Olympic-extended, gold near center)
+    podiumHtml = `
+      <div class="podium players-4">
+        ${spot(sorted[3], "iron",   "IV",  "fourth", "4TH", "rank-fourth")}
+        ${spot(sorted[1], "silver", "II",  "second", "2ND", "rank-second")}
+        ${spot(sorted[0], "gold",   "I",   "first",  "1ST", "rank-first")}
+        ${spot(sorted[2], "bronze", "III", "third",  "3RD", "rank-third")}
+      </div>
+    `;
+  }
+
+  return `
+    <div class="podium-wrap animate-in">
+      <div class="eyebrow">Expedition Complete</div>
+      <h2>The Journey's End</h2>
+      <p style="font-family: var(--font-body); font-style: italic; color: var(--ink-soft); margin-bottom: 26px;">
+        ${escapeHtml(currentJourney().finalSubtitle)}
+      </p>
+
+      ${podiumHtml}
+
+      <div class="scripture" style="max-width: 560px; margin: 20px auto;">
+        ${escapeHtml(currentJourney().finalScripture.text)}
+        <span class="ref">${escapeHtml(currentJourney().finalScripture.ref)}</span>
+      </div>
+
+      <div class="centered-actions" style="margin-top: 26px;">
+        <button id="play-again" class="btn-gold">Play Again</button>
+      </div>
+    </div>
+  `;
+}
+
+/* =========================================================
+   HANDLERS
+   ========================================================= */
+function attachHandlers() {
+  const audioBtn = document.getElementById("audio-toggle");
+  if (audioBtn) audioBtn.addEventListener("click", toggleAudio);
+
+  const resetBtn = document.getElementById("reset-btn");
+  if (resetBtn) resetBtn.addEventListener("click", handleResetRequest);
+
+  if (state.confirmReset) {
+    const cancelBtn = document.getElementById("reset-cancel");
+    if (cancelBtn) cancelBtn.addEventListener("click", handleResetCancel);
+    const confirmBtn = document.getElementById("reset-confirm");
+    if (confirmBtn) confirmBtn.addEventListener("click", handleResetConfirm);
+    return; // don't attach phase handlers when in confirm mode
+  }
+
+  if (state.phase === "journeySelect") {
+    document.querySelectorAll("[data-journey]").forEach(b => {
+      b.addEventListener("click", () => handleJourneyChoice(parseInt(b.dataset.journey, 10)));
+    });
+  }
+  else if (state.phase === "setup") {
+    document.getElementById("start-btn").addEventListener("click", handleStart);
+
+    const backBtn = document.getElementById("back-to-journeys");
+    if (backBtn) backBtn.addEventListener("click", handleBackToJourneys);
+
+    const addBtn = document.getElementById("add-slot");
+    if (addBtn) addBtn.addEventListener("click", handleAddSlot);
+
+    document.querySelectorAll("[data-remove]").forEach(b => {
+      b.addEventListener("click", e => {
+        e.preventDefault();
+        handleRemoveSlot(parseInt(b.dataset.remove, 10));
+      });
+    });
+
+    // Enter advances to next field, or starts the game on the last one
+    for (let i = 0; i < state.setupSlots; i++) {
+      const el = document.getElementById("p" + (i+1));
+      if (!el) continue;
+      el.addEventListener("keydown", e => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          const next = document.getElementById("p" + (i+2));
+          if (next) next.focus();
+          else handleStart();
+        }
+      });
+    }
+  }
+  else if (state.phase === "discovery") {
+    document.getElementById("discovery-continue").addEventListener("click", handleDiscoveryContinue);
+  }
+  else if (state.phase === "challenge") {
+    const c = currentCycles()[state.cycleIdx];
+    const isMap = c.mapChallenge && state.questionIdx === c.questions.length;
+    if (isMap) {
+      document.querySelectorAll("[data-city]").forEach(g => {
+        g.addEventListener("click", () => handleCityTap(g.dataset.city));
+      });
+      const reset = document.getElementById("map-reset");
+      const check = document.getElementById("map-check");
+      if (reset) reset.addEventListener("click", handleMapReset);
+      if (check) check.addEventListener("click", handleMapCheck);
+      const finish = document.getElementById("finish-cycle");
+      if (finish) finish.addEventListener("click", handleFinishCycle);
+    } else {
+      document.querySelectorAll("[data-answer]").forEach(b => {
+        b.addEventListener("click", () => handleAnswer(parseInt(b.dataset.answer, 10)));
+      });
+      const revealBtn = document.getElementById("reveal-btn");
+      if (revealBtn) revealBtn.addEventListener("click", () => revealAnswer(null));
+      const nextBtn = document.getElementById("next-q");
+      if (nextBtn) nextBtn.addEventListener("click", handleNextQuestion);
+
+      if (!state.questionAnswered) startTimer();
+    }
+
+    document.querySelectorAll("[data-award]").forEach(b => {
+      b.addEventListener("click", () => handleAward(parseInt(b.dataset.award, 10)));
+    });
+    const noAward = document.getElementById("no-award");
+    if (noAward) noAward.addEventListener("click", () => {
+      state.awardedFor = -1;
+      render();
+    });
+  }
+  else if (state.phase === "transition") {
+    document.getElementById("transition-continue").addEventListener("click", handleTransitionContinue);
+  }
+  else if (state.phase === "final") {
+    document.getElementById("play-again").addEventListener("click", handlePlayAgain);
+  }
+}
+
+function handleStart() {
+  const names = [];
+  for (let i = 0; i < state.setupSlots; i++) {
+    const el = document.getElementById("p" + (i+1));
+    if (el) names.push(el.value.trim());
+  }
+
+  // Required: first 2 must be filled. Optional slots (3, 4) can be empty —
+  // empty optional slots are simply dropped.
+  if (!names[0] || !names[1]) {
+    alert("Travelers One and Two need names before you set out.");
+    return;
+  }
+
+  // Drop empty optional slots
+  const finalNames = names.filter((n, i) => i < 2 || n);
+  state.players = finalNames.map(n => ({ name: n, score: 0 }));
+  state.phase = "discovery";
+  state.cycleIdx = 0;
+  render();
+}
+
+function captureSetupNames() {
+  // Save what's currently typed so re-renders don't wipe input
+  for (let i = 0; i < state.setupSlots; i++) {
+    const el = document.getElementById("p" + (i+1));
+    if (el) {
+      if (!state.players[i]) state.players[i] = { name: "", score: 0 };
+      state.players[i].name = el.value;
+    }
+  }
+}
+
+function handleAddSlot() {
+  if (state.setupSlots >= 4) return;
+  captureSetupNames();
+  state.setupSlots += 1;
+  if (!state.players[state.setupSlots - 1]) {
+    state.players[state.setupSlots - 1] = { name: "", score: 0 };
+  }
+  render();
+  // Focus the new slot for fast typing
+  requestAnimationFrame(() => {
+    const el = document.getElementById("p" + state.setupSlots);
+    if (el) el.focus();
+  });
+}
+
+function handleRemoveSlot(idx) {
+  if (idx < 2 || idx >= state.setupSlots) return;
+  captureSetupNames();
+  state.players.splice(idx, 1);
+  state.setupSlots -= 1;
+  render();
+}
+
+function handleDiscoveryContinue() {
+  state.phase = "challenge";
+  state.questionIdx = 0;
+  state.questionAnswered = false;
+  state.awardedFor = null;
+  state.lastPicked = null;
+  state.mapPlaced = [];
+  state.mapEvaluated = false;
+  render();
+}
+
+function handleAnswer(idx) {
+  if (state.questionAnswered) return;
+  revealAnswer(idx);
+}
+
+function revealAnswer(pickedIdx) {
+  stopTimer();
+  state.questionAnswered = true;
+  state.lastPicked = pickedIdx;
+
+  const c = currentCycles()[state.cycleIdx];
+  const q = c.questions[state.questionIdx];
+  if (pickedIdx !== null && pickedIdx === q.correct) {
+    playCorrectSfx();
+  } else if (pickedIdx !== null) {
+    playWrongSfx();
+  }
+
+  render();
+}
+
+function handleAward(idx) {
+  // Three cases:
+  //  - same player tapped again → undo
+  //  - different player currently awarded → transfer point
+  //  - no one awarded yet → award point
+  let flashIdx = idx;
+  if (state.awardedFor === idx) {
+    // Undo
+    state.players[idx].score = Math.max(0, state.players[idx].score - 1);
+    state.awardedFor = null;
+    flashIdx = null;
+  } else if (state.awardedFor !== null && state.awardedFor !== undefined && state.awardedFor >= 0) {
+    // Transfer from previous to new
+    state.players[state.awardedFor].score = Math.max(0, state.players[state.awardedFor].score - 1);
+    state.players[idx].score += 1;
+    state.awardedFor = idx;
+  } else {
+    // Fresh award
+    state.players[idx].score += 1;
+    state.awardedFor = idx;
+  }
+
+  playAwardSfx();
+
+  render();
+  if (flashIdx !== null) {
+    requestAnimationFrame(() => {
+      const card = document.querySelector(`[data-score-idx="${flashIdx}"]`);
+      if (card) {
+        card.classList.remove("flash");
+        void card.offsetWidth;
+        card.classList.add("flash");
+      }
+    });
+  }
+}
+
+function handleNextQuestion() {
+  const c = currentCycles()[state.cycleIdx];
+  state.questionIdx += 1;
+  state.questionAnswered = false;
+  state.awardedFor = null;
+  state.lastPicked = null;
+
+  const totalQs = c.questions.length;
+  const isMapNext = c.mapChallenge && state.questionIdx === totalQs;
+  const pastEnd = state.questionIdx > totalQs || (!c.mapChallenge && state.questionIdx >= totalQs);
+
+  if (pastEnd) {
+    afterCycle();
+    return;
+  }
+  render();
+}
+
+function handleFinishCycle() {
+  afterCycle();
+}
+
+function afterCycle() {
+  if (state.cycleIdx < currentCycles().length - 1) {
+    state.phase = "transition";
+    playTransitionSfx();
+    render();
+  } else {
+    state.phase = "final";
+    playTransitionSfx();
+    render();
+  }
+}
+
+function handleTransitionContinue() {
+  state.cycleIdx += 1;
+  state.phase = "discovery";
+  render();
+}
+
+function handleJourneyChoice(idx) {
+  if (typeof idx !== "number" || idx < 0 || idx >= JOURNEYS.length) return;
+  state.journeyIdx = idx;
+  state.phase = "setup";
+  // Reset player slots so coming back from a previous game is clean
+  state.players = [{ name: "", score: 0 }, { name: "", score: 0 }];
+  state.setupSlots = 2;
+  state.cycleIdx = 0;
+  state.questionIdx = 0;
+  state.questionAnswered = false;
+  state.awardedFor = null;
+  state.lastPicked = null;
+  state.mapPlaced = [];
+  state.mapEvaluated = false;
+  state.confirmReset = false;
+  render();
+}
+
+function handleBackToJourneys() {
+  state.phase = "journeySelect";
+  state.players = [{ name: "", score: 0 }, { name: "", score: 0 }];
+  state.setupSlots = 2;
+  render();
+}
+
+function handlePlayAgain() {
+  // Return all the way to journey select so players can pick the same or different journey
+  state.phase = "journeySelect";
+  state.players = [{ name: "", score: 0 }, { name: "", score: 0 }];
+  state.setupSlots = 2;
+  state.cycleIdx = 0;
+  state.questionIdx = 0;
+  state.questionAnswered = false;
+  state.awardedFor = null;
+  state.lastPicked = null;
+  state.mapPlaced = [];
+  state.mapEvaluated = false;
+  state.confirmReset = false;
+  render();
+}
+
+function handleResetRequest() {
+  state.confirmReset = true;
+  render();
+}
+
+function handleResetCancel() {
+  state.confirmReset = false;
+  render();
+}
+
+function handleResetConfirm() {
+  // Same effect as Play Again, but invoked mid-game
+  handlePlayAgain();
+}
+
+/* ---------- MAP HANDLERS ---------- */
+function handleCityTap(cityId) {
+  if (state.mapEvaluated) return;
+  if (state.mapPlaced.includes(cityId)) return;
+  if (state.mapPlaced.length >= currentMap().correctOrder.length) return;
+  state.mapPlaced.push(cityId);
+  playPinDropSfx();
+  render();
+}
+
+function handleMapReset() {
+  state.mapPlaced = [];
+  state.mapEvaluated = false;
+  state.awardedFor = null;
+  render();
+}
+
+function handleMapCheck() {
+  state.mapEvaluated = true;
+  render();
+}
+
+/* =========================================================
+   TIMER
+   ========================================================= */
+function startTimer() {
+  stopTimer();
+  state.timerValue = 20;
+  const fill = document.getElementById("timer-fill");
+  const wrap = document.getElementById("timer");
+  const label = document.getElementById("timer-label");
+  if (!fill || !wrap) return;
+
+  const start = performance.now();
+  const duration = 20000;
+
+  function tick(now) {
+    const elapsed = now - start;
+    const remaining = Math.max(0, duration - elapsed);
+    const seconds = Math.ceil(remaining / 1000);
+    state.timerValue = seconds;
+    const pct = (remaining / duration) * 100;
+    fill.style.width = pct + "%";
+
+    if (seconds <= 5) {
+      wrap.classList.remove("warn");
+      wrap.classList.add("danger");
+    } else if (seconds <= 10) {
+      wrap.classList.add("warn");
+      wrap.classList.remove("danger");
+    } else {
+      wrap.classList.remove("warn");
+      wrap.classList.remove("danger");
+    }
+
+    if (label) label.textContent = state.questionAnswered ? "REVEALED" : seconds + " SECONDS";
+
+    if (remaining > 0 && !state.questionAnswered) {
+      state.timer = requestAnimationFrame(tick);
+    } else if (remaining <= 0 && !state.questionAnswered) {
+      revealAnswer(null);
+    }
+  }
+  state.timer = requestAnimationFrame(tick);
+}
+
+function stopTimer() {
+  if (state.timer) {
+    cancelAnimationFrame(state.timer);
+    state.timer = null;
+  }
+}
+
+/* =========================================================
+   UTILITIES
+   ========================================================= */
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/* =========================================================
+   AUDIO (Web Audio API — procedural, no external files)
+   ========================================================= */
+const audio = {
+  ctx: null,
+  masterGain: null,
+  droneNodes: null
+};
+
+function initAudio() {
+  if (audio.ctx) return;
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    audio.ctx = new Ctx();
+    audio.masterGain = audio.ctx.createGain();
+    audio.masterGain.gain.value = 0;
+    audio.masterGain.connect(audio.ctx.destination);
+  } catch (e) {
+    audio.ctx = null;
+  }
+}
+
+function startDrone() {
+  if (!audio.ctx) return;
+  const ctx = audio.ctx;
+  const now = ctx.currentTime;
+
+  // If already created, just ramp master gain back up
+  if (audio.droneNodes) {
+    audio.masterGain.gain.cancelScheduledValues(now);
+    audio.masterGain.gain.setValueAtTime(audio.masterGain.gain.value, now);
+    audio.masterGain.gain.linearRampToValueAtTime(0.35, now + 1.5);
+    return;
+  }
+
+  // Ancient-sounding drone: root + fifth + octave, all slightly detuned
+  // for a shimmer. Filter noise lightly on top for wind/desert texture.
+  const freqs = [98, 146.83, 196]; // G2, D3, G3 — open fifth gives a "stone" sound
+  const oscs = [];
+  const oscGains = [];
+
+  freqs.forEach((f, i) => {
+    const o1 = ctx.createOscillator();
+    const o2 = ctx.createOscillator();
+    o1.type = i === 2 ? 'triangle' : 'sine';
+    o2.type = 'sine';
+    o1.frequency.value = f;
+    o2.frequency.value = f * 1.003; // gentle beat
+
+    const g = ctx.createGain();
+    g.gain.value = i === 0 ? 0.22 : (i === 1 ? 0.15 : 0.1);
+
+    o1.connect(g);
+    o2.connect(g);
+
+    // Slow amplitude wobble
+    const lfo = ctx.createOscillator();
+    const lfoGain = ctx.createGain();
+    lfo.frequency.value = 0.07 + i * 0.03;
+    lfoGain.gain.value = i === 0 ? 0.05 : 0.03;
+    lfo.connect(lfoGain);
+    lfoGain.connect(g.gain);
+
+    g.connect(audio.masterGain);
+    o1.start(now); o2.start(now); lfo.start(now);
+
+    oscs.push(o1, o2, lfo);
+    oscGains.push(g);
+  });
+
+  // Filtered noise for wind texture
+  const bufferSize = 2 * ctx.sampleRate;
+  const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const nd = noiseBuffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) nd[i] = Math.random() * 2 - 1;
+  const noise = ctx.createBufferSource();
+  noise.buffer = noiseBuffer;
+  noise.loop = true;
+
+  const noiseFilter = ctx.createBiquadFilter();
+  noiseFilter.type = 'bandpass';
+  noiseFilter.frequency.value = 420;
+  noiseFilter.Q.value = 0.9;
+
+  const noiseGain = ctx.createGain();
+  noiseGain.gain.value = 0.045;
+
+  // Slow filter sweep for wind motion
+  const filterLfo = ctx.createOscillator();
+  const filterLfoGain = ctx.createGain();
+  filterLfo.frequency.value = 0.04;
+  filterLfoGain.gain.value = 180;
+  filterLfo.connect(filterLfoGain);
+  filterLfoGain.connect(noiseFilter.frequency);
+  filterLfo.start(now);
+
+  noise.connect(noiseFilter);
+  noiseFilter.connect(noiseGain);
+  noiseGain.connect(audio.masterGain);
+  noise.start(now);
+
+  audio.droneNodes = { oscs, oscGains, noise, filterLfo, noiseGain, noiseFilter };
+
+  // Fade master in
+  audio.masterGain.gain.cancelScheduledValues(now);
+  audio.masterGain.gain.setValueAtTime(0, now);
+  audio.masterGain.gain.linearRampToValueAtTime(0.35, now + 2.0);
+}
+
+function stopDrone() {
+  if (!audio.ctx || !audio.masterGain) return;
+  const ctx = audio.ctx;
+  const now = ctx.currentTime;
+  audio.masterGain.gain.cancelScheduledValues(now);
+  audio.masterGain.gain.setValueAtTime(audio.masterGain.gain.value, now);
+  audio.masterGain.gain.linearRampToValueAtTime(0, now + 0.8);
+}
+
+function toggleAudio() {
+  initAudio();
+  if (!audio.ctx) return;
+  if (audio.ctx.state === 'suspended') audio.ctx.resume();
+
+  state.audioOn = !state.audioOn;
+  if (state.audioOn) startDrone();
+  else stopDrone();
+  render();
+}
+
+/* Short sound effects — only play when audio is on */
+function playTone(freq, duration, type = 'sine', vol = 0.15, attack = 0.01, release = 0.2) {
+  if (!state.audioOn || !audio.ctx) return;
+  const ctx = audio.ctx;
+  const now = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  const g = ctx.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  g.gain.value = 0;
+  g.gain.linearRampToValueAtTime(vol, now + attack);
+  g.gain.linearRampToValueAtTime(0, now + attack + duration + release);
+  osc.connect(g);
+  g.connect(audio.masterGain);
+  osc.start(now);
+  osc.stop(now + attack + duration + release + 0.05);
+}
+
+function playAwardSfx() {
+  // Bright two-note "ting" (G5 → C6)
+  playTone(784, 0.08, 'triangle', 0.18, 0.005, 0.18);
+  setTimeout(() => playTone(1046.5, 0.14, 'triangle', 0.16, 0.005, 0.25), 80);
+}
+
+function playCorrectSfx() {
+  // Major third rising
+  playTone(523.25, 0.12, 'sine', 0.14, 0.005, 0.2);
+  setTimeout(() => playTone(659.25, 0.16, 'sine', 0.14, 0.005, 0.25), 90);
+}
+
+function playWrongSfx() {
+  // Descending minor third
+  playTone(349.23, 0.14, 'triangle', 0.12, 0.005, 0.2);
+  setTimeout(() => playTone(293.66, 0.22, 'triangle', 0.12, 0.005, 0.3), 100);
+}
+
+function playTransitionSfx() {
+  // Chime: D5, G5, B5 arpeggio
+  playTone(587.33, 0.18, 'triangle', 0.14, 0.005, 0.4);
+  setTimeout(() => playTone(783.99, 0.18, 'triangle', 0.14, 0.005, 0.4), 140);
+  setTimeout(() => playTone(987.77, 0.35, 'triangle', 0.13, 0.005, 0.6), 280);
+}
+
+function playPinDropSfx() {
+  // Small wooden thunk
+  playTone(180, 0.08, 'sine', 0.2, 0.002, 0.1);
+  playTone(90, 0.1, 'sine', 0.14, 0.002, 0.15);
+}
+
+/* =========================================================
+   BOOT
+   ========================================================= */
+render();
+</script>
+</body>
+</html>
