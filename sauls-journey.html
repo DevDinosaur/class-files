@@ -286,10 +286,27 @@
     50%      { transform: scale(1.12); opacity: 0; }
   }
 
+  .narration-rate {
+    height: 40px;
+    min-height: 40px;
+    min-width: 48px;
+    padding: 0 10px;
+    font-family: var(--font-display);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    border-radius: 20px;
+    background: linear-gradient(180deg, var(--parchment), var(--parchment-dark));
+    color: var(--ink);
+    border: 1px solid var(--ink-soft);
+    box-shadow: 0 2px 4px rgba(43,29,14,0.2);
+  }
+
   @media (max-width: 420px) {
     .trail-node { width: 22px; height: 22px; min-width: 22px; font-size: 0.7rem; }
     .trail-label { font-size: 0.6rem; letter-spacing: 0.08em; }
     .audio-toggle, .reset-btn { width: 36px; height: 36px; min-height: 36px; }
+    .narration-rate { height: 36px; min-height: 36px; min-width: 42px; font-size: 0.7rem; padding: 0 8px; }
     .reset-btn { font-size: 1.1rem; }
   }
 
@@ -2483,6 +2500,7 @@ const state = {
   mapEvaluated: false,
   audioOn: false,
   narrationOn: false,      // text-to-speech reading of question text
+  narrationRate: 1.15,     // playback speed for narration (host-adjustable)
   optionsRevealed: false,  // host reveals answer choices when ready
   lastSpokenKey: null,     // tracks which question has already been read aloud
   confirmReset: false      // shows a "start over?" confirmation overlay
@@ -2596,6 +2614,7 @@ function renderExpeditionBar() {
       </div>
       <div class="expedition-controls">
         <button class="audio-toggle narration-toggle ${state.narrationOn ? 'on' : ''}" id="narration-toggle" aria-label="Toggle question narration" title="${state.narrationOn ? 'Narration on — tap to silence' : 'Narration off — tap to read questions aloud'}">📢</button>
+        ${state.narrationOn ? `<button class="narration-rate" id="narration-rate" aria-label="Change narration speed" title="Narration speed (tap to cycle)">${formatNarrationRate(state.narrationRate)}</button>` : ""}
         <button class="audio-toggle ${state.audioOn ? 'on' : ''}" id="audio-toggle" aria-label="Toggle sound" title="${state.audioOn ? 'Sound on — tap to mute' : 'Sound off — tap to enable'}">♪</button>
         ${state.phase === "final" ? "" : `<button class="reset-btn" id="reset-btn" aria-label="Start over" title="Start over">⟲</button>`}
       </div>
@@ -2742,6 +2761,7 @@ function renderDiscovery() {
       </div>
 
       <div class="centered-actions">
+        ${state.narrationOn ? `<button id="reread-discovery-btn" class="btn-ghost reread-btn">📢 Read Again</button>` : ""}
         <button id="discovery-continue" class="btn-gold">Proceed to Challenge →</button>
       </div>
     </div>
@@ -3105,6 +3125,9 @@ function attachHandlers() {
   const narrationBtn = document.getElementById("narration-toggle");
   if (narrationBtn) narrationBtn.addEventListener("click", toggleNarration);
 
+  const narrationRateBtn = document.getElementById("narration-rate");
+  if (narrationRateBtn) narrationRateBtn.addEventListener("click", cycleNarrationRate);
+
   const resetBtn = document.getElementById("reset-btn");
   if (resetBtn) resetBtn.addEventListener("click", handleResetRequest);
 
@@ -3153,6 +3176,10 @@ function attachHandlers() {
   }
   else if (state.phase === "discovery") {
     document.getElementById("discovery-continue").addEventListener("click", handleDiscoveryContinue);
+    const rereadDiscBtn = document.getElementById("reread-discovery-btn");
+    if (rereadDiscBtn) rereadDiscBtn.addEventListener("click", handleRereadDiscovery);
+    // Auto-narrate the lesson page once per cycle when narration is on.
+    maybeNarrateDiscovery();
   }
   else if (state.phase === "challenge") {
     const c = currentCycles()[state.cycleIdx];
@@ -3261,6 +3288,7 @@ function handleRemoveSlot(idx) {
 }
 
 function handleDiscoveryContinue() {
+  Narration.stop();
   state.phase = "challenge";
   state.questionIdx = 0;
   state.questionAnswered = false;
@@ -3298,13 +3326,43 @@ function handleReread() {
 function maybeNarrateQuestion() {
   if (!state.narrationOn) return;
   if (state.optionsRevealed || state.questionAnswered) return;
-  const key = state.cycleIdx + "-" + state.questionIdx;
+  const key = "q-" + state.cycleIdx + "-" + state.questionIdx;
   if (state.lastSpokenKey === key) return;
   const c = currentCycles()[state.cycleIdx];
   const q = c && c.questions[state.questionIdx];
   if (!q) return;
   state.lastSpokenKey = key;
   Narration.speak(q.q);
+}
+
+function buildDiscoveryNarration(c) {
+  // Reads the event summary (narrative) and the field note. The scripture
+  // verse is shown on screen but not read aloud — the host typically reads
+  // scripture themselves, or the kids do, in the context of the lesson.
+  const parts = [];
+  if (c.narrative) parts.push(c.narrative);
+  if (c.fieldNote) {
+    parts.push((c.fieldNote.label || "Field Note") + ".");
+    parts.push(c.fieldNote.text);
+  }
+  return parts.join(" ");
+}
+
+function maybeNarrateDiscovery() {
+  if (!state.narrationOn) return;
+  const key = "d-" + state.cycleIdx;
+  if (state.lastSpokenKey === key) return;
+  const c = currentCycles()[state.cycleIdx];
+  if (!c) return;
+  state.lastSpokenKey = key;
+  Narration.speak(buildDiscoveryNarration(c));
+}
+
+function handleRereadDiscovery() {
+  const c = currentCycles()[state.cycleIdx];
+  if (c && state.narrationOn) {
+    Narration.speak(buildDiscoveryNarration(c));
+  }
 }
 
 function revealAnswer(pickedIdx) {
@@ -3647,15 +3705,29 @@ const Narration = {
     if (!text) return;
     try {
       window.speechSynthesis.cancel(); // clear any pending utterances
-      const utter = new SpeechSynthesisUtterance(String(text));
+      const utter = new SpeechSynthesisUtterance(Narration.normalize(text));
       if (Narration.voice) utter.voice = Narration.voice;
-      utter.rate = 0.92;   // slightly slower for clarity
+      utter.rate = state.narrationRate || 1.0;
       utter.pitch = 0.95;  // slightly warmer for "narrator" feel
       utter.volume = 1.0;
       window.speechSynthesis.speak(utter);
     } catch (e) {
       // Speech synthesis can throw on some mobile browsers; fail silently.
     }
+  },
+
+  normalize(text) {
+    // Reshape text so the synthesizer reads it naturally.
+    // - Bible references like "Acts 19:11–12" should become "Acts 19, 11 to 12"
+    // - Em/en dashes should become brief pauses (commas)
+    // - Curly quotes should be stripped so the synth doesn't pronounce them
+    return String(text)
+      .replace(/(\d+):(\d+)/g, "$1, $2")        // 19:11 -> 19, 11
+      .replace(/(\d+)\s*[\u2013\u2014\-]\s*(\d+)/g, "$1 to $2") // 11–12 -> 11 to 12
+      .replace(/[\u2014\u2013]/g, ", ")          // remaining em/en dashes -> pause
+      .replace(/[\u201C\u201D\u2018\u2019"]/g, "") // strip curly + straight quotes
+      .replace(/\s+/g, " ")
+      .trim();
   },
 
   stop() {
@@ -3674,6 +3746,31 @@ function toggleNarration() {
     state.lastSpokenKey = null;
   }
   render();
+}
+
+const NARRATION_RATES = [0.9, 1.0, 1.15, 1.3, 1.5];
+
+function cycleNarrationRate() {
+  const current = state.narrationRate || 1.0;
+  // Find the closest preset, then advance to the next one (wrap around).
+  let bestIdx = 0;
+  let bestDiff = Infinity;
+  NARRATION_RATES.forEach((r, i) => {
+    const d = Math.abs(r - current);
+    if (d < bestDiff) { bestDiff = d; bestIdx = i; }
+  });
+  const nextIdx = (bestIdx + 1) % NARRATION_RATES.length;
+  state.narrationRate = NARRATION_RATES[nextIdx];
+  // If something is currently being read, stop it; the new rate will apply
+  // to the next utterance the host triggers.
+  Narration.stop();
+  render();
+}
+
+function formatNarrationRate(r) {
+  // Trim trailing .0 so "1.0×" reads as "1×"
+  const n = Number(r) || 1.0;
+  return (n % 1 === 0 ? n.toFixed(0) : n.toFixed(2).replace(/0$/, "")) + "×";
 }
 
 /* =========================================================
