@@ -467,6 +467,48 @@
   }
 
   /* =========================================================
+     REVEAL CHOICES (pre-answer host control)
+     ========================================================= */
+  .reveal-choices-wrap {
+    margin-top: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .reveal-choices-btn {
+    font-size: 1.05rem;
+    padding: 16px 32px;
+    min-height: 56px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    box-shadow: 0 3px 6px rgba(43,29,14,0.3), 0 0 0 0 rgba(232,200,120,0.6);
+    animation: revealPulse 2.4s ease-in-out infinite;
+  }
+
+  @keyframes revealPulse {
+    0%, 100% { box-shadow: 0 3px 6px rgba(43,29,14,0.3), 0 0 0 0 rgba(232,200,120,0.6); }
+    50%      { box-shadow: 0 3px 6px rgba(43,29,14,0.3), 0 0 0 10px rgba(232,200,120,0); }
+  }
+
+  .reveal-choices-hint {
+    font-family: var(--font-accent);
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    letter-spacing: 0.08em;
+    text-align: center;
+    font-style: italic;
+  }
+
+  .reread-btn {
+    font-size: 0.78rem;
+    padding: 8px 16px;
+    min-height: 36px;
+    letter-spacing: 0.06em;
+  }
+
+  /* =========================================================
      SETUP SCREEN
      ========================================================= */
   .title-wrap {
@@ -1023,6 +1065,43 @@
     background: linear-gradient(180deg, var(--moss-bright), var(--moss));
     color: var(--parchment);
     border-color: var(--moss);
+  }
+
+  .award-grid button.first-correct {
+    background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+    color: var(--ink);
+    border-color: var(--leather);
+    box-shadow: 0 2px 5px rgba(43,29,14,0.3), inset 0 0 0 2px var(--gold-bright);
+  }
+
+  .award-grid button {
+    position: relative;
+  }
+
+  .award-badge {
+    position: absolute;
+    top: 2px;
+    right: 4px;
+    font-family: var(--font-display);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0;
+    background: var(--ink);
+    color: var(--parchment);
+    padding: 1px 5px;
+    border-radius: 8px;
+    line-height: 1.2;
+  }
+
+  .award-badge.first {
+    background: var(--seal-red);
+    color: var(--gold-bright);
+  }
+
+  .btn-ghost.no-award-active {
+    background: var(--seal-red);
+    color: var(--parchment);
+    border-color: var(--seal-red-dark);
   }
 
   /* =========================================================
@@ -2394,12 +2473,18 @@ const state = {
   questionIdx: 0,
   questionAnswered: false,
   lockAnswers: false,
-  awardedFor: null,        // current question has been awarded (stores index)
+  awardedFor: null,        // legacy — kept null; new system uses fields below
+  awardOrder: [],          // player indices in the order they were marked correct (first = +2, rest = +1)
+  awardedNoOne: false,     // true when "no one got it" is active for this question
+  questionAwarded: {},     // tracks how many points THIS question has given each player (for clean diffs)
   timer: null,
   timerValue: 20,
   mapPlaced: [],           // ids placed so far
   mapEvaluated: false,
   audioOn: false,
+  narrationOn: false,      // text-to-speech reading of question text
+  optionsRevealed: false,  // host reveals answer choices when ready
+  lastSpokenKey: null,     // tracks which question has already been read aloud
   confirmReset: false      // shows a "start over?" confirmation overlay
 };
 
@@ -2510,6 +2595,7 @@ function renderExpeditionBar() {
         <div class="trail-labels" style="grid-template-columns: repeat(${cycles.length}, 1fr);">${labelParts}</div>
       </div>
       <div class="expedition-controls">
+        <button class="audio-toggle narration-toggle ${state.narrationOn ? 'on' : ''}" id="narration-toggle" aria-label="Toggle question narration" title="${state.narrationOn ? 'Narration on — tap to silence' : 'Narration off — tap to read questions aloud'}">📢</button>
         <button class="audio-toggle ${state.audioOn ? 'on' : ''}" id="audio-toggle" aria-label="Toggle sound" title="${state.audioOn ? 'Sound on — tap to mute' : 'Sound off — tap to enable'}">♪</button>
         ${state.phase === "final" ? "" : `<button class="reset-btn" id="reset-btn" aria-label="Start over" title="Start over">⟲</button>`}
       </div>
@@ -2663,6 +2749,28 @@ function renderDiscovery() {
 }
 
 /* ---------- CHALLENGE ---------- */
+/* ---------- AWARD PANEL HELPERS (shared by question + map) ---------- */
+function awardLabel(isMap) {
+  if (state.awardedNoOne) return "No one got it · tap a player to award instead";
+  if (state.awardOrder.length === 0) {
+    return isMap ? "Award the map challenge · first +2 · others +1" : "Who got it? First +2 · others +1";
+  }
+  return "Tap to add (+1) · tap again to remove";
+}
+
+function awardButtonHtml(p, i) {
+  const orderIdx = state.awardOrder.indexOf(i);
+  const isAwarded = orderIdx !== -1;
+  const isFirst = orderIdx === 0;
+  let cls = "";
+  if (isFirst) cls = "awarded first-correct";
+  else if (isAwarded) cls = "awarded";
+  const badge = isFirst ? '<span class="award-badge first">+2</span>'
+              : isAwarded ? '<span class="award-badge">+1</span>'
+              : '';
+  return `<button data-award="${i}" class="${cls}">${escapeHtml(p.name || "Player " + (i+1))}${badge}</button>`;
+}
+
 function renderChallenge() {
   const c = currentCycles()[state.cycleIdx];
   const questions = c.questions;
@@ -2692,14 +2800,12 @@ function renderChallenge() {
   const awardHtml = answered ? `
     <div class="explanation animate-in">${escapeHtml(q.explain)}</div>
     <div class="award-panel animate-in">
-      <div class="label">${state.awardedFor !== null && state.awardedFor >= 0 ? "Tap again to undo · tap another to transfer" : "Who answered correctly?"}</div>
+      <div class="label">${awardLabel()}</div>
       <div class="award-grid" style="grid-template-columns: repeat(${n}, 1fr);">
-        ${state.players.map((p, i) => `
-          <button data-award="${i}" class="${state.awardedFor === i ? 'awarded' : ''}">${escapeHtml(p.name || "Player " + (i+1))}</button>
-        `).join("")}
+        ${state.players.map((p, i) => awardButtonHtml(p, i)).join("")}
       </div>
       <div style="margin-top: 12px; text-align: center;">
-        <button id="no-award" class="btn-ghost" style="font-size: 0.75rem; padding: 8px 14px; min-height: 36px;">No one got it</button>
+        <button id="no-award" class="btn-ghost ${state.awardedNoOne ? 'no-award-active' : ''}" style="font-size: 0.75rem; padding: 8px 14px; min-height: 36px;">${state.awardedNoOne ? "✓ No one got it" : "No one got it"}</button>
         <button id="next-q" class="btn-gold" style="font-size: 0.85rem;">Next →</button>
       </div>
     </div>
@@ -2711,6 +2817,38 @@ function renderChallenge() {
       ? "timer warn"
       : "timer";
 
+  // The answer choices, timer, and reveal-bypass only appear AFTER the host
+  // reveals the choices. Before that, the question text stands alone with a
+  // "Reveal Choices" button so every player has time to read fully.
+  const showChoices = state.optionsRevealed || answered;
+
+  const timerHtml = showChoices ? `
+      <div class="timer-label" id="timer-label">${answered ? "REVEALED" : state.timerValue + " SECONDS"}</div>
+      <div class="${timerCls}" id="timer">
+        <div class="timer-fill" id="timer-fill" style="width: ${(state.timerValue / 20) * 100}%;"></div>
+      </div>
+  ` : "";
+
+  const answerGridHtml = showChoices ? `
+      <div class="answer-grid stagger">
+        ${optsHtml}
+      </div>
+  ` : "";
+
+  const revealBypassHtml = (showChoices && !answered) ? `
+      <div style="text-align:center; margin-top: 8px;">
+        <button id="reveal-btn" class="btn-ghost" style="font-size: 0.75rem; padding: 8px 14px; min-height: 36px;">Reveal Answer</button>
+      </div>
+  ` : "";
+
+  const revealChoicesHtml = (!state.optionsRevealed && !answered) ? `
+      <div class="reveal-choices-wrap">
+        <button id="reveal-choices-btn" class="btn-gold reveal-choices-btn">Reveal Choices</button>
+        <div class="reveal-choices-hint">${state.narrationOn ? "Tap when everyone has heard the question" : "Tap when everyone has read the question"}</div>
+        ${state.narrationOn ? `<button id="reread-btn" class="btn-ghost reread-btn" aria-label="Read question again">📢 Read Again</button>` : ""}
+      </div>
+  ` : "";
+
   return `
     <div class="frame animate-in">
       <div class="q-header">
@@ -2720,20 +2858,15 @@ function renderChallenge() {
 
       <div class="question-text">${escapeHtml(q.q)}</div>
 
-      <div class="timer-label" id="timer-label">${answered ? "REVEALED" : state.timerValue + " SECONDS"}</div>
-      <div class="${timerCls}" id="timer">
-        <div class="timer-fill" id="timer-fill" style="width: ${(state.timerValue / 20) * 100}%;"></div>
-      </div>
+      ${timerHtml}
 
-      <div class="answer-grid stagger">
-        ${optsHtml}
-      </div>
+      ${answerGridHtml}
 
       ${awardHtml}
 
-      ${!answered ? `<div style="text-align:center; margin-top: 8px;">
-        <button id="reveal-btn" class="btn-ghost" style="font-size: 0.75rem; padding: 8px 14px; min-height: 36px;">Reveal Answer</button>
-      </div>` : ""}
+      ${revealBypassHtml}
+
+      ${revealChoicesHtml}
     </div>
   `;
 }
@@ -2794,14 +2927,12 @@ function renderMapChallenge() {
   const nPlayers = state.players.length;
   const awardHtml = evaluated ? `
     <div class="award-panel animate-in">
-      <div class="label">${state.awardedFor !== null && state.awardedFor >= 0 ? "Tap again to undo · tap another to transfer" : "Award the map challenge"}</div>
+      <div class="label">${awardLabel(true)}</div>
       <div class="award-grid" style="grid-template-columns: repeat(${nPlayers}, 1fr);">
-        ${state.players.map((p, i) => `
-          <button data-award="${i}" class="${state.awardedFor === i ? 'awarded' : ''}">${escapeHtml(p.name || "Player " + (i+1))}</button>
-        `).join("")}
+        ${state.players.map((p, i) => awardButtonHtml(p, i)).join("")}
       </div>
       <div style="margin-top: 12px; text-align: center;">
-        <button id="no-award" class="btn-ghost" style="font-size: 0.75rem; padding: 8px 14px; min-height: 36px;">No one got it</button>
+        <button id="no-award" class="btn-ghost ${state.awardedNoOne ? 'no-award-active' : ''}" style="font-size: 0.75rem; padding: 8px 14px; min-height: 36px;">${state.awardedNoOne ? "✓ No one got it" : "No one got it"}</button>
         <button id="finish-cycle" class="btn-gold" style="font-size: 0.85rem;">Finish Cycle →</button>
       </div>
     </div>
@@ -2971,6 +3102,9 @@ function attachHandlers() {
   const audioBtn = document.getElementById("audio-toggle");
   if (audioBtn) audioBtn.addEventListener("click", toggleAudio);
 
+  const narrationBtn = document.getElementById("narration-toggle");
+  if (narrationBtn) narrationBtn.addEventListener("click", toggleNarration);
+
   const resetBtn = document.getElementById("reset-btn");
   if (resetBtn) resetBtn.addEventListener("click", handleResetRequest);
 
@@ -3042,17 +3176,25 @@ function attachHandlers() {
       const nextBtn = document.getElementById("next-q");
       if (nextBtn) nextBtn.addEventListener("click", handleNextQuestion);
 
-      if (!state.questionAnswered) startTimer();
+      const revealChoicesBtn = document.getElementById("reveal-choices-btn");
+      if (revealChoicesBtn) revealChoicesBtn.addEventListener("click", handleRevealChoices);
+
+      const rereadBtn = document.getElementById("reread-btn");
+      if (rereadBtn) rereadBtn.addEventListener("click", handleReread);
+
+      // Timer only runs once the host reveals the answer choices.
+      if (!state.questionAnswered && state.optionsRevealed) startTimer();
+
+      // Auto-narrate the question once per question, when narration is on and
+      // the choices have not yet been revealed.
+      maybeNarrateQuestion();
     }
 
     document.querySelectorAll("[data-award]").forEach(b => {
       b.addEventListener("click", () => handleAward(parseInt(b.dataset.award, 10)));
     });
     const noAward = document.getElementById("no-award");
-    if (noAward) noAward.addEventListener("click", () => {
-      state.awardedFor = -1;
-      render();
-    });
+    if (noAward) noAward.addEventListener("click", handleNoAward);
   }
   else if (state.phase === "transition") {
     document.getElementById("transition-continue").addEventListener("click", handleTransitionContinue);
@@ -3122,7 +3264,12 @@ function handleDiscoveryContinue() {
   state.phase = "challenge";
   state.questionIdx = 0;
   state.questionAnswered = false;
+  state.optionsRevealed = false;
+  state.lastSpokenKey = null;
   state.awardedFor = null;
+  state.awardOrder = [];
+  state.awardedNoOne = false;
+  state.questionAwarded = {};
   state.lastPicked = null;
   state.mapPlaced = [];
   state.mapEvaluated = false;
@@ -3134,8 +3281,35 @@ function handleAnswer(idx) {
   revealAnswer(idx);
 }
 
+function handleRevealChoices() {
+  Narration.stop();
+  state.optionsRevealed = true;
+  render();
+}
+
+function handleReread() {
+  const c = currentCycles()[state.cycleIdx];
+  const q = c && c.questions[state.questionIdx];
+  if (q && state.narrationOn) {
+    Narration.speak(q.q);
+  }
+}
+
+function maybeNarrateQuestion() {
+  if (!state.narrationOn) return;
+  if (state.optionsRevealed || state.questionAnswered) return;
+  const key = state.cycleIdx + "-" + state.questionIdx;
+  if (state.lastSpokenKey === key) return;
+  const c = currentCycles()[state.cycleIdx];
+  const q = c && c.questions[state.questionIdx];
+  if (!q) return;
+  state.lastSpokenKey = key;
+  Narration.speak(q.q);
+}
+
 function revealAnswer(pickedIdx) {
   stopTimer();
+  Narration.stop();
   state.questionAnswered = true;
   state.lastPicked = pickedIdx;
 
@@ -3150,30 +3324,51 @@ function revealAnswer(pickedIdx) {
   render();
 }
 
-function handleAward(idx) {
-  // Three cases:
-  //  - same player tapped again → undo
-  //  - different player currently awarded → transfer point
-  //  - no one awarded yet → award point
-  let flashIdx = idx;
-  if (state.awardedFor === idx) {
-    // Undo
-    state.players[idx].score = Math.max(0, state.players[idx].score - 1);
-    state.awardedFor = null;
-    flashIdx = null;
-  } else if (state.awardedFor !== null && state.awardedFor !== undefined && state.awardedFor >= 0) {
-    // Transfer from previous to new
-    state.players[state.awardedFor].score = Math.max(0, state.players[state.awardedFor].score - 1);
-    state.players[idx].score += 1;
-    state.awardedFor = idx;
-  } else {
-    // Fresh award
-    state.players[idx].score += 1;
-    state.awardedFor = idx;
+/* =========================================================
+   AWARDING POINTS
+   First correct tap = +2 points. Each additional correct tap = +1 point.
+   Tap a player already in the order to remove them; ordering recomputes
+   automatically so the next-still-awarded player becomes "first" if needed.
+   Tap "No one got it" to clear everyone and mark the question as a miss.
+   ========================================================= */
+function applyAwards(newOrder, noOne) {
+  // Compute desired points-per-player for this question from the new order.
+  const desired = {};
+  if (!noOne && newOrder && newOrder.length) {
+    newOrder.forEach((playerIdx, i) => {
+      desired[playerIdx] = (i === 0) ? 2 : 1;
+    });
   }
+  // Apply the diff against what THIS question previously awarded.
+  const previous = state.questionAwarded || {};
+  state.players.forEach((p, i) => {
+    const before = previous[i] || 0;
+    const after = desired[i] || 0;
+    if (before !== after) {
+      p.score = Math.max(0, p.score + (after - before));
+    }
+  });
+  state.questionAwarded = desired;
+  state.awardOrder = (noOne || !newOrder) ? [] : newOrder.slice();
+  state.awardedNoOne = !!noOne;
+}
+
+function handleAward(idx) {
+  // If "no one got it" was active, this player tap clears that and starts fresh.
+  let order = state.awardedNoOne ? [] : state.awardOrder.slice();
+  const existingPos = order.indexOf(idx);
+  let flashIdx = idx;
+  if (existingPos !== -1) {
+    // Tapping an already-awarded player removes them. Order shifts up;
+    // if they were first, the next person in line becomes first.
+    order.splice(existingPos, 1);
+    flashIdx = null;
+  } else {
+    order.push(idx);
+  }
+  applyAwards(order, false);
 
   playAwardSfx();
-
   render();
   if (flashIdx !== null) {
     requestAnimationFrame(() => {
@@ -3187,12 +3382,27 @@ function handleAward(idx) {
   }
 }
 
+function handleNoAward() {
+  // Toggle: tapping again clears the "no one" state back to blank.
+  if (state.awardedNoOne) {
+    applyAwards([], false);
+  } else {
+    applyAwards([], true);
+  }
+  render();
+}
+
 function handleNextQuestion() {
   const c = currentCycles()[state.cycleIdx];
   state.questionIdx += 1;
   state.questionAnswered = false;
+  state.optionsRevealed = false;
   state.awardedFor = null;
+  state.awardOrder = [];
+  state.awardedNoOne = false;
+  state.questionAwarded = {};
   state.lastPicked = null;
+  Narration.stop();
 
   const totalQs = c.questions.length;
   const isMapNext = c.mapChallenge && state.questionIdx === totalQs;
@@ -3237,7 +3447,12 @@ function handleJourneyChoice(idx) {
   state.cycleIdx = 0;
   state.questionIdx = 0;
   state.questionAnswered = false;
+  state.optionsRevealed = false;
+  state.lastSpokenKey = null;
   state.awardedFor = null;
+  state.awardOrder = [];
+  state.awardedNoOne = false;
+  state.questionAwarded = {};
   state.lastPicked = null;
   state.mapPlaced = [];
   state.mapEvaluated = false;
@@ -3260,11 +3475,17 @@ function handlePlayAgain() {
   state.cycleIdx = 0;
   state.questionIdx = 0;
   state.questionAnswered = false;
+  state.optionsRevealed = false;
+  state.lastSpokenKey = null;
   state.awardedFor = null;
+  state.awardOrder = [];
+  state.awardedNoOne = false;
+  state.questionAwarded = {};
   state.lastPicked = null;
   state.mapPlaced = [];
   state.mapEvaluated = false;
   state.confirmReset = false;
+  Narration.stop();
   render();
 }
 
@@ -3297,6 +3518,9 @@ function handleMapReset() {
   state.mapPlaced = [];
   state.mapEvaluated = false;
   state.awardedFor = null;
+  state.awardOrder = [];
+  state.awardedNoOne = false;
+  state.questionAwarded = {};
   render();
 }
 
@@ -3366,6 +3590,90 @@ function escapeHtml(str) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+/* =========================================================
+   NARRATION (Web Speech API — text-to-speech for questions)
+   ========================================================= */
+const Narration = {
+  voice: null,
+  ready: false,
+
+  init() {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    const pickVoice = () => {
+      const voices = window.speechSynthesis.getVoices();
+      if (!voices || !voices.length) return false;
+      // Prefer narrator-style English voices, in rough order of quality
+      // across the major platforms (macOS, iOS, Windows Edge, Chrome,
+      // Android). Fall back to any English voice, then anything at all.
+      const preferOrder = [
+        "Microsoft Brian Online (Natural)",
+        "Microsoft Guy Online (Natural)",
+        "Microsoft Matthew Online (Natural)",
+        "Google UK English Male",
+        "Daniel (Enhanced)",
+        "Daniel",
+        "Arthur",
+        "Reed",
+        "Rocko",
+        "Alex",
+        "Tom",
+        "Google US English",
+        "Microsoft David"
+      ];
+      for (const name of preferOrder) {
+        const v = voices.find(vv => vv.name && (vv.name === name || vv.name.startsWith(name)));
+        if (v) { Narration.voice = v; Narration.ready = true; return true; }
+      }
+      Narration.voice =
+        voices.find(v => v.lang && v.lang.toLowerCase().startsWith("en-gb")) ||
+        voices.find(v => v.lang && v.lang.toLowerCase().startsWith("en")) ||
+        voices[0];
+      Narration.ready = !!Narration.voice;
+      return Narration.ready;
+    };
+    pickVoice();
+    try {
+      window.speechSynthesis.addEventListener("voiceschanged", pickVoice);
+    } catch (e) {
+      // Older Safari only supports the property assignment form
+      window.speechSynthesis.onvoiceschanged = pickVoice;
+    }
+  },
+
+  speak(text) {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    if (!text) return;
+    try {
+      window.speechSynthesis.cancel(); // clear any pending utterances
+      const utter = new SpeechSynthesisUtterance(String(text));
+      if (Narration.voice) utter.voice = Narration.voice;
+      utter.rate = 0.92;   // slightly slower for clarity
+      utter.pitch = 0.95;  // slightly warmer for "narrator" feel
+      utter.volume = 1.0;
+      window.speechSynthesis.speak(utter);
+    } catch (e) {
+      // Speech synthesis can throw on some mobile browsers; fail silently.
+    }
+  },
+
+  stop() {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    try { window.speechSynthesis.cancel(); } catch (e) {}
+  }
+};
+Narration.init();
+
+function toggleNarration() {
+  state.narrationOn = !state.narrationOn;
+  if (!state.narrationOn) {
+    Narration.stop();
+  } else {
+    // Re-toggling on should re-read the current question if we're on one.
+    state.lastSpokenKey = null;
+  }
+  render();
 }
 
 /* =========================================================
