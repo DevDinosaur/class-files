@@ -1,0 +1,3638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Apostles' Arena — A New Testament Knowledge Duel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=IM+Fell+English+SC&display=swap" rel="stylesheet">
+<style>
+/* =========================================================
+   THEME TOKENS — same family as Saul's Journey
+   ========================================================= */
+:root {
+  --ink: #2b1d0e;
+  --ink-soft: #4a3520;
+  --parchment: #f0e3c6;
+  --parchment-dark: #d9c396;
+  --parchment-shadow: #b89a68;
+  --gold: #c9a34f;
+  --gold-bright: #e8c878;
+  --seal-red: #8b2c1a;
+  --seal-red-dark: #5a1a0f;
+  --moss: #4a6b3a;
+  --moss-bright: #6d9656;
+  --leather: #8b4513;
+  --ember: #d97a3b;
+  --shadow: rgba(43, 29, 14, 0.35);
+
+  /* Player accent colors (for 3 contenders) */
+  --p1: #7a2d1c;   /* deep red */
+  --p2: #2d5d3a;   /* deep green */
+  --p3: #1f3c63;   /* deep blue */
+
+  --font-display: 'Cinzel', 'Trajan Pro', serif;
+  --font-accent: 'IM Fell English SC', 'Palatino', serif;
+  --font-body: 'EB Garamond', 'Garamond', serif;
+
+  --radius: 4px;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  font-family: var(--font-body);
+  color: var(--ink);
+  font-size: 18px;
+  line-height: 1.5;
+}
+
+body {
+  background-color: var(--parchment);
+  background-image:
+    radial-gradient(ellipse at 20% 10%, rgba(139,69,19,0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 30%, rgba(184,154,104,0.3) 0%, transparent 55%),
+    radial-gradient(ellipse at 30% 80%, rgba(139,44,26,0.08) 0%, transparent 60%),
+    radial-gradient(ellipse at 90% 90%, rgba(43,29,14,0.15) 0%, transparent 55%),
+    radial-gradient(circle at 50% 50%, rgba(240,227,198,1) 0%, rgba(217,195,150,1) 100%);
+  background-attachment: scroll;
+  padding: 10px;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.35;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(43,29,14,0.025) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, rgba(43,29,14,0.02) 0 1px, transparent 1px 4px);
+  mix-blend-mode: multiply;
+  z-index: 0;
+}
+
+#app {
+  max-width: 720px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+/* =========================================================
+   TYPOGRAPHY
+   ========================================================= */
+h1, h2, h3 {
+  font-family: var(--font-display);
+  color: var(--ink);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  margin: 0;
+}
+h1 { font-size: 2.1rem; line-height: 1.05; }
+h2 { font-size: 1.4rem; line-height: 1.15; }
+h3 { font-size: 1.05rem; letter-spacing: 0.12em; text-transform: uppercase; }
+
+.eyebrow {
+  font-family: var(--font-accent);
+  font-size: 0.85rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--seal-red);
+  margin-bottom: 6px;
+}
+
+p { margin: 0 0 12px 0; }
+
+/* =========================================================
+   SHARED PANEL
+   ========================================================= */
+.panel {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.18), rgba(184,154,104,0.10)),
+    var(--parchment);
+  border: 1px solid var(--parchment-shadow);
+  border-radius: var(--radius);
+  padding: 18px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 12px rgba(43,29,14,0.18), inset 0 1px 0 rgba(255,255,255,0.4);
+  position: relative;
+}
+
+.panel.tight { padding: 12px 14px; }
+
+.panel-header {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.divider {
+  height: 1px;
+  margin: 12px auto;
+  background: linear-gradient(90deg, transparent, var(--ink-soft) 20%, var(--ink-soft) 80%, transparent);
+  opacity: 0.5;
+  max-width: 70%;
+}
+
+/* =========================================================
+   BUTTONS
+   ========================================================= */
+button {
+  font-family: var(--font-display);
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.btn-primary {
+  display: inline-block;
+  padding: 14px 22px;
+  min-height: 52px;
+  background: linear-gradient(180deg, var(--seal-red), var(--seal-red-dark));
+  color: var(--parchment);
+  border: 1px solid var(--seal-red-dark);
+  border-radius: var(--radius);
+  box-shadow: 0 3px 8px rgba(43,29,14,0.35), inset 0 1px 0 rgba(255,255,255,0.18);
+  transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease);
+}
+.btn-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(43,29,14,0.4); }
+.btn-primary:active:not(:disabled) { transform: translateY(1px); }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-secondary {
+  display: inline-block;
+  padding: 12px 18px;
+  min-height: 44px;
+  background: linear-gradient(180deg, var(--parchment), var(--parchment-dark));
+  color: var(--ink);
+  border: 1px solid var(--ink-soft);
+  border-radius: var(--radius);
+  box-shadow: 0 2px 6px rgba(43,29,14,0.2), inset 0 1px 0 rgba(255,255,255,0.5);
+  transition: transform 0.15s var(--ease);
+}
+.btn-secondary:hover:not(:disabled) { transform: translateY(-1px); }
+.btn-secondary:active:not(:disabled) { transform: translateY(1px); }
+.btn-secondary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-gold {
+  background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+  color: var(--ink);
+  border-color: var(--leather);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--ink-soft);
+  border: 1px dashed var(--ink-soft);
+  padding: 8px 14px;
+  font-size: 0.78rem;
+  border-radius: var(--radius);
+}
+
+/* =========================================================
+   TITLE SCREEN
+   ========================================================= */
+.title-screen { text-align: center; padding: 24px 16px; }
+
+.title-mark {
+  width: 88px;
+  height: 88px;
+  margin: 0 auto 14px;
+  position: relative;
+}
+
+.title-mark svg { width: 100%; height: 100%; display: block; }
+
+.title-screen h1 {
+  font-size: 2.6rem;
+  letter-spacing: 0.15em;
+  margin-bottom: 6px;
+}
+
+.title-screen .tagline {
+  font-family: var(--font-accent);
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+  color: var(--seal-red);
+  margin-bottom: 18px;
+}
+
+.title-screen .blurb {
+  font-style: italic;
+  max-width: 460px;
+  margin: 0 auto 22px;
+  color: var(--ink-soft);
+}
+
+.title-rules {
+  text-align: left;
+  max-width: 460px;
+  margin: 0 auto 24px;
+  font-size: 0.95rem;
+}
+.title-rules h3 { margin-bottom: 8px; text-align: center; color: var(--seal-red); }
+.title-rules ol { padding-left: 22px; margin: 0; }
+.title-rules li { margin-bottom: 6px; }
+
+/* =========================================================
+   SETUP SCREEN
+   ========================================================= */
+.player-count-row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+.player-count-row button {
+  padding: 10px 18px;
+  min-width: 56px;
+  font-size: 1.1rem;
+  background: transparent;
+  border: 1px solid var(--ink-soft);
+  color: var(--ink-soft);
+  border-radius: var(--radius);
+}
+.player-count-row button.active {
+  background: linear-gradient(180deg, var(--seal-red), var(--seal-red-dark));
+  color: var(--parchment);
+  border-color: var(--seal-red-dark);
+}
+
+.name-input-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.name-input-row .badge {
+  width: 38px; height: 38px;
+  min-width: 38px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--parchment);
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 1.1rem;
+  letter-spacing: 0;
+  box-shadow: 0 2px 4px rgba(43,29,14,0.3);
+}
+.name-input-row input {
+  flex: 1;
+  font-family: var(--font-body);
+  font-size: 1.05rem;
+  padding: 10px 12px;
+  border: 1px solid var(--ink-soft);
+  background: rgba(255,255,255,0.45);
+  color: var(--ink);
+  border-radius: var(--radius);
+  min-height: 44px;
+}
+.name-input-row input:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
+
+/* =========================================================
+   CHARACTER SELECT
+   ========================================================= */
+.select-header {
+  text-align: center;
+  margin-bottom: 14px;
+}
+.select-header .who {
+  font-family: var(--font-accent);
+  font-size: 0.85rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--seal-red);
+}
+.select-header h2 { margin-top: 4px; }
+
+.char-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.char-card {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.22), rgba(184,154,104,0.06)),
+    var(--parchment);
+  border: 1px solid var(--parchment-shadow);
+  border-radius: var(--radius);
+  padding: 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease), border-color 0.2s var(--ease);
+  box-shadow: 0 2px 6px rgba(43,29,14,0.15);
+  position: relative;
+  overflow: hidden;
+}
+.char-card:hover:not(.taken):not(.locked) { transform: translateY(-2px); box-shadow: 0 5px 14px rgba(43,29,14,0.3); }
+.char-card.selected {
+  border: 2px solid var(--seal-red);
+  background: linear-gradient(180deg, rgba(139,44,26,0.10), rgba(139,44,26,0.02)), var(--parchment);
+}
+.char-card.taken {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.char-card.taken::after {
+  content: 'CHOSEN';
+  position: absolute;
+  top: 8px; right: 8px;
+  font-family: var(--font-accent);
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  color: var(--seal-red);
+  background: rgba(240,227,198,0.85);
+  padding: 2px 6px;
+  border: 1px solid var(--seal-red);
+  border-radius: 2px;
+}
+
+.char-portrait {
+  width: 56px; height: 56px;
+  float: left;
+  margin-right: 10px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+  border: 2px solid var(--leather);
+  border-radius: 50%;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 1.4rem;
+  color: var(--ink);
+  box-shadow: inset 0 2px 4px rgba(255,255,255,0.4), 0 2px 4px rgba(43,29,14,0.3);
+}
+
+.char-card h3 {
+  font-size: 1.05rem;
+  margin-bottom: 2px;
+  letter-spacing: 0.08em;
+}
+.char-role {
+  font-family: var(--font-accent);
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--seal-red);
+  margin-bottom: 6px;
+}
+.char-stats {
+  clear: both;
+  display: flex;
+  gap: 10px;
+  margin: 8px 0 6px;
+  font-family: var(--font-accent);
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+}
+.char-stats .stat strong { color: var(--ink); font-family: var(--font-display); }
+.char-special {
+  font-size: 0.85rem;
+  color: var(--ink);
+  font-style: italic;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--parchment-shadow);
+}
+.char-special strong {
+  font-style: normal;
+  color: var(--seal-red);
+  font-family: var(--font-display);
+  letter-spacing: 0.08em;
+}
+
+/* =========================================================
+   BATTLE — HP HEADER
+   ========================================================= */
+.battle-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.hp-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(184,154,104,0.08));
+  border: 1px solid var(--parchment-shadow);
+  border-radius: var(--radius);
+  transition: all 0.3s var(--ease);
+  position: relative;
+}
+.hp-row.is-active {
+  border: 2px solid var(--seal-red);
+  background: linear-gradient(180deg, rgba(139,44,26,0.12), rgba(139,44,26,0.02));
+  box-shadow: 0 0 0 3px rgba(139,44,26,0.18), 0 2px 8px rgba(43,29,14,0.3);
+}
+.hp-row.is-targetable {
+  cursor: pointer;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(201,163,79,0.25);
+  animation: pulseTarget 1.4s ease-in-out infinite;
+}
+.hp-row.is-targetable:hover { transform: translateY(-1px); }
+.hp-row.is-fallen {
+  opacity: 0.45;
+  filter: grayscale(0.6);
+}
+
+@keyframes pulseTarget {
+  0%,100% { box-shadow: 0 0 0 3px rgba(201,163,79,0.25); }
+  50%     { box-shadow: 0 0 0 6px rgba(201,163,79,0.08); }
+}
+
+.hp-portrait {
+  width: 44px; height: 44px;
+  min-width: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+  border: 2px solid var(--leather);
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 1.1rem;
+  color: var(--ink);
+  box-shadow: inset 0 2px 3px rgba(255,255,255,0.4);
+}
+.hp-portrait.p1 { background: linear-gradient(135deg, #c5402b, #7a2d1c); color: #fff5e0; border-color: #4a1a0d; }
+.hp-portrait.p2 { background: linear-gradient(135deg, #6d9656, #2d5d3a); color: #f0f5e8; border-color: #1a3d22; }
+.hp-portrait.p3 { background: linear-gradient(135deg, #4a7da8, #1f3c63); color: #e8eff8; border-color: #102245; }
+
+.hp-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.hp-namerow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 6px;
+}
+.hp-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hp-name .apostle {
+  font-family: var(--font-accent);
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  color: var(--seal-red);
+  margin-left: 6px;
+  font-weight: 400;
+}
+.hp-numbers {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 0.85rem;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.hp-bar-outer {
+  height: 10px;
+  background: rgba(43,29,14,0.18);
+  border: 1px solid var(--ink-soft);
+  border-radius: 2px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(43,29,14,0.25);
+}
+.hp-bar-inner {
+  height: 100%;
+  background: linear-gradient(180deg, #b94a35, var(--seal-red));
+  transition: width 0.5s var(--ease);
+  position: relative;
+}
+.hp-bar-inner.healthy {
+  background: linear-gradient(180deg, #7fb368, var(--moss));
+}
+.hp-bar-inner.warning {
+  background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+}
+.hp-bar-inner.critical {
+  background: linear-gradient(180deg, #d65535, var(--seal-red-dark));
+  animation: criticalPulse 1.2s ease-in-out infinite;
+}
+@keyframes criticalPulse {
+  0%,100% { filter: brightness(1); }
+  50%     { filter: brightness(1.25); }
+}
+
+.hp-status {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+.status-chip {
+  font-family: var(--font-accent);
+  font-size: 0.62rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 2px;
+  background: rgba(43,29,14,0.1);
+  color: var(--ink-soft);
+  border: 1px solid var(--parchment-shadow);
+}
+.status-chip.defending  { background: rgba(74,107,58,0.2); color: var(--moss); border-color: var(--moss); }
+.status-chip.charging   { background: rgba(217,122,59,0.2); color: var(--ember); border-color: var(--ember); }
+.status-chip.skipping   { background: rgba(139,44,26,0.2); color: var(--seal-red); border-color: var(--seal-red); }
+.status-chip.special-ready { background: rgba(201,163,79,0.25); color: var(--leather); border-color: var(--gold); }
+
+/* Floating damage / heal numbers */
+.float-num {
+  position: absolute;
+  top: -8px; right: 12px;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 1.3rem;
+  letter-spacing: 0;
+  pointer-events: none;
+  animation: floatNum 1.5s ease-out forwards;
+  text-shadow: 0 1px 2px rgba(43,29,14,0.6), 0 0 4px rgba(255,255,255,0.5);
+}
+.float-num.damage { color: var(--seal-red); }
+.float-num.heal   { color: var(--moss); }
+.float-num.miss   { color: var(--ink-soft); font-size: 0.95rem; font-family: var(--font-accent); font-style: italic; }
+
+@keyframes floatNum {
+  0%   { opacity: 0; transform: translateY(8px) scale(0.7); }
+  20%  { opacity: 1; transform: translateY(-4px) scale(1.15); }
+  100% { opacity: 0; transform: translateY(-44px) scale(1); }
+}
+
+.hp-row.shake { animation: shake 0.5s ease-in-out; }
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20%     { transform: translateX(-5px); }
+  40%     { transform: translateX(5px); }
+  60%     { transform: translateX(-3px); }
+  80%     { transform: translateX(3px); }
+}
+
+.hp-row.heal-glow { animation: healGlow 0.8s ease-out; }
+@keyframes healGlow {
+  0%   { box-shadow: 0 0 0 0 rgba(74,107,58,0.6); }
+  60%  { box-shadow: 0 0 0 12px rgba(74,107,58,0); }
+  100% { box-shadow: 0 0 0 0 rgba(74,107,58,0); }
+}
+
+/* =========================================================
+   BATTLE — TURN BANNER
+   ========================================================= */
+.turn-banner {
+  text-align: center;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  background: linear-gradient(180deg, rgba(139,44,26,0.18), rgba(139,44,26,0.05));
+  border: 1px solid var(--seal-red);
+  border-radius: var(--radius);
+  font-family: var(--font-accent);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  color: var(--seal-red-dark);
+}
+.turn-banner strong {
+  font-family: var(--font-display);
+  letter-spacing: 0.1em;
+  color: var(--ink);
+}
+
+/* =========================================================
+   BATTLE — ACTIONS MENU
+   ========================================================= */
+.action-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 10px;
+  min-height: 80px;
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, var(--parchment), var(--parchment-dark));
+  color: var(--ink);
+  border: 1px solid var(--ink-soft);
+  box-shadow: 0 2px 6px rgba(43,29,14,0.2), inset 0 1px 0 rgba(255,255,255,0.5);
+  transition: transform 0.15s var(--ease);
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.action-btn:hover:not(:disabled) { transform: translateY(-2px); }
+.action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.action-btn .icon {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+.action-btn .label { font-size: 0.85rem; }
+.action-btn .sub {
+  font-family: var(--font-accent);
+  font-size: 0.65rem;
+  letter-spacing: 0.18em;
+  color: var(--ink-soft);
+  font-weight: 400;
+  text-transform: uppercase;
+}
+
+.action-btn.strike  { border-left: 4px solid var(--seal-red); }
+.action-btn.pray    { border-left: 4px solid var(--moss); }
+.action-btn.defend  { border-left: 4px solid var(--leather); }
+.action-btn.special { border-left: 4px solid var(--gold); background: linear-gradient(180deg, #f4e7c8, var(--gold-bright)); }
+.action-btn.special:disabled { background: linear-gradient(180deg, var(--parchment), var(--parchment-dark)); }
+
+/* Instructions text */
+.instructions {
+  text-align: center;
+  font-family: var(--font-accent);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  margin: 8px 0 12px;
+}
+
+/* =========================================================
+   BATTLE — QUESTION
+   ========================================================= */
+.question-panel {
+  background: linear-gradient(180deg, rgba(255,255,255,0.2), rgba(184,154,104,0.08)), var(--parchment);
+  border: 1px solid var(--parchment-shadow);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 12px rgba(43,29,14,0.2), inset 0 1px 0 rgba(255,255,255,0.4);
+  position: relative;
+}
+.question-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-family: var(--font-accent);
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.question-source { color: var(--seal-red); }
+.question-text {
+  font-size: 1.15rem;
+  line-height: 1.4;
+  color: var(--ink);
+  margin: 12px 0;
+}
+
+.answer-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+.answer-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  min-height: 56px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.4), rgba(255,255,255,0.1));
+  color: var(--ink);
+  border: 1px solid var(--ink-soft);
+  border-radius: var(--radius);
+  text-align: left;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  font-weight: 400;
+  cursor: pointer;
+  transition: transform 0.15s var(--ease), background 0.15s var(--ease);
+  position: relative;
+}
+.answer-btn .letter {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 1rem;
+  color: var(--seal-red);
+  letter-spacing: 0;
+  min-width: 20px;
+}
+.answer-btn:hover:not(:disabled) { background: linear-gradient(180deg, rgba(255,255,255,0.55), rgba(255,255,255,0.2)); transform: translateX(2px); }
+.answer-btn:disabled { cursor: not-allowed; }
+
+.answer-btn.correct {
+  background: linear-gradient(180deg, rgba(109,150,86,0.35), rgba(74,107,58,0.18));
+  border-color: var(--moss);
+}
+.answer-btn.wrong {
+  background: linear-gradient(180deg, rgba(139,44,26,0.3), rgba(90,26,15,0.12));
+  border-color: var(--seal-red-dark);
+}
+.answer-btn.removed {
+  opacity: 0.25;
+  text-decoration: line-through;
+  cursor: not-allowed;
+}
+.answer-btn.correct .letter { color: var(--moss); }
+.answer-btn.wrong .letter { color: var(--seal-red-dark); }
+
+.explain-box {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: rgba(43,29,14,0.06);
+  border-left: 3px solid var(--gold);
+  font-size: 0.95rem;
+  font-style: italic;
+  color: var(--ink-soft);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+/* Reveal button */
+.reveal-cta {
+  text-align: center;
+  margin-top: 14px;
+}
+
+/* Steal panel */
+.steal-panel {
+  margin-top: 12px;
+  padding: 12px;
+  background: linear-gradient(180deg, rgba(217,122,59,0.18), rgba(217,122,59,0.05));
+  border: 1px dashed var(--ember);
+  border-radius: var(--radius);
+}
+.steal-title {
+  text-align: center;
+  font-family: var(--font-display);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ember);
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-bottom: 8px;
+}
+.steal-sub {
+  text-align: center;
+  font-family: var(--font-accent);
+  font-size: 0.78rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 10px;
+}
+.steal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.steal-btn {
+  padding: 10px 8px;
+  min-height: 48px;
+  background: linear-gradient(180deg, var(--parchment), var(--parchment-dark));
+  color: var(--ink);
+  border: 1px solid var(--ink-soft);
+  border-radius: var(--radius);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.steal-btn.skip { grid-column: 1 / -1; opacity: 0.85; background: transparent; border-style: dashed; }
+
+/* =========================================================
+   BATTLE LOG
+   ========================================================= */
+.battle-log {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: rgba(43,29,14,0.04);
+  border: 1px dashed var(--parchment-shadow);
+  border-radius: var(--radius);
+  font-family: var(--font-accent);
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+  max-height: 110px;
+  overflow-y: auto;
+}
+.battle-log .log-entry {
+  padding: 2px 0;
+  border-bottom: 1px dotted rgba(43,29,14,0.12);
+}
+.battle-log .log-entry:last-child { border-bottom: none; color: var(--ink); }
+
+/* =========================================================
+   VICTORY SCREEN
+   ========================================================= */
+.victory-screen { text-align: center; padding: 16px; }
+.victory-screen h1 {
+  font-size: 2.4rem;
+  letter-spacing: 0.15em;
+  margin-bottom: 8px;
+}
+.victory-screen .winner-name {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  color: var(--seal-red);
+  margin: 12px 0 4px;
+}
+.victory-screen .winner-apostle {
+  font-family: var(--font-accent);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+  margin-bottom: 14px;
+}
+.victory-quote {
+  font-style: italic;
+  font-size: 1.1rem;
+  color: var(--ink);
+  margin: 20px auto 6px;
+  max-width: 460px;
+  position: relative;
+  padding: 0 22px;
+}
+.victory-quote::before, .victory-quote::after {
+  content: '"';
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  color: var(--gold);
+  position: absolute;
+  line-height: 0.8;
+}
+.victory-quote::before { left: 0; top: 8px; }
+.victory-quote::after { right: 0; bottom: -10px; }
+.victory-ref {
+  font-family: var(--font-accent);
+  font-size: 0.85rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--seal-red);
+  margin-bottom: 24px;
+}
+.standings { margin: 20px 0; }
+.standings .standing-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 14px;
+  border-bottom: 1px dashed var(--parchment-shadow);
+  font-family: var(--font-display);
+  letter-spacing: 0.08em;
+  font-size: 0.95rem;
+}
+.standings .standing-row:last-child { border-bottom: none; }
+.standings .position {
+  color: var(--seal-red);
+  font-weight: 900;
+  min-width: 32px;
+}
+.standings .standing-name { flex: 1; text-align: left; margin-left: 8px; }
+.standings .standing-hp {
+  font-family: var(--font-accent);
+  font-size: 0.85rem;
+  letter-spacing: 0.12em;
+  color: var(--ink-soft);
+}
+
+.victory-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+
+/* =========================================================
+   AUDIO TOGGLE (corner)
+   ========================================================= */
+.audio-toggle {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  font-size: 1rem;
+  border-radius: 50%;
+  background: linear-gradient(180deg, var(--parchment), var(--parchment-dark));
+  color: var(--ink);
+  border: 1px solid var(--ink-soft);
+  box-shadow: 0 2px 4px rgba(43,29,14,0.2);
+  letter-spacing: 0;
+  z-index: 10;
+}
+.audio-toggle.on {
+  background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+  border-color: var(--leather);
+}
+
+/* =========================================================
+   STAGGER ANIMATION (panel reveals)
+   ========================================================= */
+.stagger > * { opacity: 0; animation: fadeUp 0.5s var(--ease) forwards; }
+.stagger > *:nth-child(1) { animation-delay: 0.0s; }
+.stagger > *:nth-child(2) { animation-delay: 0.06s; }
+.stagger > *:nth-child(3) { animation-delay: 0.12s; }
+.stagger > *:nth-child(4) { animation-delay: 0.18s; }
+.stagger > *:nth-child(5) { animation-delay: 0.24s; }
+.stagger > *:nth-child(6) { animation-delay: 0.30s; }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* =========================================================
+   BATTLE STAGE — characters in a row, RPG-style
+   ========================================================= */
+.battle-stage {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 12px;
+  padding: 14px 8px 10px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(184,154,104,0.08) 60%, rgba(139,69,19,0.18) 100%),
+    var(--parchment);
+  border: 1px solid var(--parchment-shadow);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 12px rgba(43,29,14,0.18), inset 0 1px 0 rgba(255,255,255,0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Ground line beneath the figures */
+.battle-stage::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: 60px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(43,29,14,0.25) 15%, rgba(43,29,14,0.25) 85%, transparent);
+}
+
+.battle-stage.players-2 { grid-template-columns: 1fr 1fr; }
+.battle-stage.players-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+.combatant {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 6px 4px 4px;
+  border-radius: var(--radius);
+  border: 2px solid transparent;
+  transition: all 0.3s var(--ease);
+  position: relative;
+  min-width: 0;
+}
+
+.combatant.is-active {
+  background: linear-gradient(180deg, rgba(139,44,26,0.12) 0%, rgba(139,44,26,0.02) 70%, transparent 100%);
+  border-color: var(--seal-red);
+  box-shadow: 0 0 0 3px rgba(139,44,26,0.15);
+}
+
+.combatant.is-targetable {
+  cursor: pointer;
+  border-color: var(--gold);
+  background: linear-gradient(180deg, rgba(201,163,79,0.18) 0%, rgba(201,163,79,0.02) 70%, transparent 100%);
+  box-shadow: 0 0 0 3px rgba(201,163,79,0.18);
+  animation: pulseTargetCombatant 1.4s ease-in-out infinite;
+}
+.combatant.is-targetable:hover { transform: translateY(-2px); }
+
+@keyframes pulseTargetCombatant {
+  0%,100% { box-shadow: 0 0 0 3px rgba(201,163,79,0.18); }
+  50%     { box-shadow: 0 0 0 7px rgba(201,163,79,0.04); }
+}
+
+.combatant.is-fallen {
+  opacity: 0.55;
+}
+
+.combatant-art-wrap {
+  width: 100%;
+  height: 130px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  margin-bottom: 2px;
+  position: relative;
+}
+
+.apostle-svg {
+  width: 92px;
+  height: 130px;
+  display: block;
+  transform-origin: 50% 90%;
+  transition: filter 0.3s var(--ease);
+  filter: drop-shadow(0 2px 3px rgba(43,29,14,0.35));
+}
+
+/* Active turn — slow gentle bob */
+.combatant.is-active .apostle-svg {
+  animation: combatantBob 2.2s ease-in-out infinite;
+}
+@keyframes combatantBob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-4px); }
+}
+
+/* Attack lunge */
+.combatant.attacking .apostle-svg {
+  animation: combatantLunge 0.55s var(--ease);
+}
+@keyframes combatantLunge {
+  0%   { transform: translateX(0) translateY(0) scale(1); }
+  25%  { transform: translateX(-6px) translateY(2px) scale(1.02); }
+  55%  { transform: translateX(12px) translateY(-4px) scale(1.10); filter: drop-shadow(0 6px 8px rgba(139,44,26,0.5)) brightness(1.1); }
+  100% { transform: translateX(0) translateY(0) scale(1); }
+}
+
+/* Hit shake + red flash */
+.combatant.is-hit .apostle-svg {
+  animation: combatantHit 0.55s ease-in-out;
+}
+@keyframes combatantHit {
+  0%, 100% { transform: translateX(0); filter: drop-shadow(0 2px 3px rgba(43,29,14,0.35)); }
+  15%      { transform: translateX(-6px); filter: drop-shadow(0 2px 3px rgba(43,29,14,0.35)) brightness(1.4) sepia(1) saturate(5) hue-rotate(-20deg); }
+  30%      { transform: translateX(6px); filter: drop-shadow(0 2px 3px rgba(43,29,14,0.35)) brightness(1.4) sepia(1) saturate(5) hue-rotate(-20deg); }
+  45%      { transform: translateX(-4px); filter: drop-shadow(0 2px 3px rgba(43,29,14,0.35)) brightness(1.2) sepia(1) saturate(3) hue-rotate(-20deg); }
+  60%      { transform: translateX(4px); }
+}
+
+/* Heal glow */
+.combatant.is-healing .apostle-svg {
+  animation: combatantHeal 0.9s ease-out;
+}
+@keyframes combatantHeal {
+  0%   { transform: translateY(0) scale(1); filter: drop-shadow(0 2px 3px rgba(43,29,14,0.35)); }
+  40%  { transform: translateY(-6px) scale(1.05); filter: drop-shadow(0 0 12px rgba(109,150,86,0.85)) brightness(1.15); }
+  100% { transform: translateY(0) scale(1); filter: drop-shadow(0 2px 3px rgba(43,29,14,0.35)); }
+}
+
+/* Defend pose — small shield aura */
+.combatant.is-defending::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: var(--radius);
+  pointer-events: none;
+  background: radial-gradient(ellipse at center 60%, rgba(139,69,19,0.0) 50%, rgba(139,69,19,0.18) 70%, rgba(139,69,19,0) 100%);
+  animation: defendAura 1.6s ease-in-out infinite;
+}
+@keyframes defendAura {
+  0%,100% { opacity: 0.45; }
+  50%     { opacity: 0.85; }
+}
+
+/* Charging (Peter) — orange ember glow */
+.combatant.is-charging .apostle-svg {
+  animation: combatantCharge 1.6s ease-in-out infinite;
+}
+@keyframes combatantCharge {
+  0%, 100% { filter: drop-shadow(0 2px 3px rgba(43,29,14,0.35)) drop-shadow(0 0 6px rgba(217,122,59,0.4)); }
+  50%      { filter: drop-shadow(0 2px 3px rgba(43,29,14,0.35)) drop-shadow(0 0 18px rgba(217,122,59,0.8)) brightness(1.15); }
+}
+
+/* Fallen — toppled over */
+.combatant.is-fallen .apostle-svg {
+  transform: rotate(-72deg) translateY(28px) translateX(-10px);
+  filter: drop-shadow(0 2px 3px rgba(43,29,14,0.35)) grayscale(0.55) brightness(0.75);
+  transition: transform 0.8s var(--ease), filter 0.8s var(--ease);
+}
+
+/* HP block beneath each combatant */
+.combatant-hp {
+  width: 100%;
+  padding: 0 4px;
+}
+.combatant-hp .hp-row-inner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
+  margin-bottom: 2px;
+}
+.combatant-hp-numbers {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 0.78rem;
+  color: var(--ink);
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+.combatant-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.06em;
+  margin-top: 4px;
+  color: var(--ink);
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 2px;
+}
+.combatant-name .apostle-tag {
+  display: block;
+  font-family: var(--font-accent);
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  color: var(--seal-red);
+  font-weight: 400;
+  text-transform: uppercase;
+  margin-top: 1px;
+}
+.combatant-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 3px;
+  margin-top: 4px;
+  min-height: 14px;
+}
+
+/* Floating damage/heal numbers attached to combatant */
+.combatant .float-num {
+  position: absolute;
+  top: 36px;
+  left: 50%;
+  transform: translateX(-50%);
+  right: auto;
+}
+
+/* =========================================================
+   CHARACTER ART IN SELECT CARDS
+   ========================================================= */
+.char-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.char-card-top {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.char-card .apostle-svg {
+  width: 64px;
+  height: 90px;
+  min-width: 64px;
+  filter: drop-shadow(0 2px 3px rgba(43,29,14,0.35));
+}
+.char-card-titles { flex: 1; min-width: 0; }
+.char-card .char-stats { margin: 4px 0 0; }
+
+/* =========================================================
+   VERDICT BLOCK (correct/wrong banner)
+   ========================================================= */
+.verdict {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  margin: 12px 0;
+  font-family: var(--font-display);
+  letter-spacing: 0.08em;
+  font-weight: 700;
+}
+.verdict.verdict-correct {
+  background: linear-gradient(180deg, rgba(109,150,86,0.30), rgba(74,107,58,0.10));
+  border: 1px solid var(--moss);
+  color: var(--moss);
+}
+.verdict.verdict-wrong {
+  background: linear-gradient(180deg, rgba(139,44,26,0.25), rgba(90,26,15,0.08));
+  border: 1px solid var(--seal-red);
+  color: var(--seal-red);
+}
+.verdict-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+.verdict-text {
+  font-size: 1rem;
+}
+
+/* Answer-reveal callout — shows the correct answer text at the end */
+.answer-reveal {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: linear-gradient(180deg, rgba(201,163,79,0.20), rgba(201,163,79,0.05));
+  border: 1px solid var(--gold);
+  border-left: 4px solid var(--leather);
+  border-radius: var(--radius);
+}
+.answer-reveal-label {
+  font-family: var(--font-accent);
+  letter-spacing: 0.2em;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  color: var(--seal-red);
+  margin-bottom: 4px;
+}
+.answer-reveal-text {
+  font-family: var(--font-body);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.3;
+}
+
+/* =========================================================
+   STEAL PROMPT (verdict buttons for stealer's verbal answer)
+   ========================================================= */
+.steal-prompt {
+  margin-top: 12px;
+  padding: 14px 12px;
+  background: linear-gradient(180deg, rgba(217,122,59,0.20), rgba(217,122,59,0.05));
+  border: 1px dashed var(--ember);
+  border-radius: var(--radius);
+  text-align: center;
+}
+.steal-prompt-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.steal-prompt-name {
+  font-family: var(--font-display);
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  color: var(--ember);
+  font-size: 1rem;
+  margin-bottom: 4px;
+}
+.steal-prompt-instructions {
+  font-family: var(--font-accent);
+  letter-spacing: 0.14em;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 12px;
+}
+.steal-verdict-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.verdict-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px;
+  min-height: 64px;
+  border-radius: var(--radius);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform 0.15s var(--ease);
+  border: 1px solid;
+}
+.verdict-btn:hover { transform: translateY(-2px); }
+.verdict-btn:active { transform: translateY(1px); }
+.verdict-btn .icon { font-size: 1.4rem; line-height: 1; }
+.verdict-btn .label { font-size: 0.85rem; }
+.verdict-btn.correct {
+  background: linear-gradient(180deg, rgba(109,150,86,0.35), rgba(74,107,58,0.15));
+  color: var(--moss);
+  border-color: var(--moss);
+}
+.verdict-btn.wrong {
+  background: linear-gradient(180deg, rgba(139,44,26,0.30), rgba(90,26,15,0.10));
+  color: var(--seal-red);
+  border-color: var(--seal-red);
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+@media (max-width: 480px) {
+  body { padding: 8px; font-size: 17px; }
+  .panel { padding: 14px; }
+  h1 { font-size: 1.7rem; }
+  .title-screen h1 { font-size: 2rem; }
+  .question-text { font-size: 1.05rem; }
+  .answer-btn { font-size: 0.95rem; padding: 11px 12px; min-height: 52px; }
+  .char-grid { grid-template-columns: 1fr; }
+  .char-portrait { width: 50px; height: 50px; font-size: 1.25rem; }
+  .action-btn { min-height: 70px; padding: 12px 8px; }
+  .action-btn .label { font-size: 0.78rem; }
+  .hp-portrait { width: 38px; height: 38px; font-size: 0.95rem; }
+  .hp-name { font-size: 0.9rem; }
+  /* Battle stage on narrow screens — tighter character art */
+  .battle-stage { padding: 10px 4px 8px; gap: 3px; }
+  .battle-stage::before { bottom: 55px; }
+  .apostle-svg { width: 72px; height: 104px; }
+  .combatant-art-wrap { height: 104px; }
+  .combatant-name { font-size: 0.75rem; letter-spacing: 0.04em; }
+  .combatant-name .apostle-tag { font-size: 0.55rem; letter-spacing: 0.14em; }
+  .combatant-hp-numbers { font-size: 0.7rem; }
+  .char-card .apostle-svg { width: 56px; height: 78px; min-width: 56px; }
+}
+@media (max-width: 380px) {
+  .apostle-svg { width: 62px; height: 88px; }
+  .combatant-art-wrap { height: 88px; }
+  .battle-stage::before { bottom: 50px; }
+}
+</style>
+</head>
+<body>
+
+<button class="audio-toggle" id="audio-toggle" aria-label="Toggle ambient audio" title="Toggle ambient audio">♫</button>
+
+<div id="app"></div>
+
+<script>
+/* =========================================================
+   GAME DATA — Questions (lifted verbatim from Saul's Journey)
+   ========================================================= */
+const JOURNEYS = [
+{
+  id: "conversion",
+  title: "Saul's Journey",
+  cycles: [
+    {
+      title: "The Hunter",
+      questions: [
+        {
+          q: "At Stephen's stoning, what was Saul's role?",
+          type: "mc",
+          options: [
+            "He threw the first stone",
+            "He held the coats of the witnesses",
+            "He was away in Damascus",
+            "He was preaching in the temple"
+          ],
+          correct: 1,
+          explain: "Acts 7:58 says the witnesses laid their coats at the feet of a young man named Saul. He did not throw stones. He approved."
+        },
+        {
+          q: "True or False: Saul trained in Jerusalem under the rabbi Gamaliel.",
+          type: "tf",
+          options: ["True", "False"],
+          correct: 0,
+          explain: "Paul himself says so in Acts 22:3. Gamaliel was one of the most respected rabbis of his generation."
+        },
+        {
+          q: "According to Acts 8:3, where did Saul go looking for believers?",
+          type: "mc",
+          options: ["Only the temple courts", "Only the synagogues", "House to house", "Only in Damascus"],
+          correct: 2,
+          explain: "Saul went house to house. He was not waiting for believers to show up. He was hunting them where they lived."
+        }
+      ]
+    },
+    {
+      title: "The Road",
+      questions: [
+        {
+          q: "Who did the voice from the light say Saul was persecuting?",
+          type: "mc",
+          options: ["Stephen", "Gamaliel", "Jesus", "An angel of the Lord"],
+          correct: 2,
+          explain: "Jesus identifies himself with his people. When Saul attacked Christians, he was attacking Jesus himself."
+        },
+        {
+          q: "How many days was Saul blind after the vision?",
+          type: "mc",
+          options: ["One day", "Three days", "Seven days", "Forty days"],
+          correct: 1,
+          explain: "Three days of darkness. A man who thought he could see everything learns he has been blind the whole time."
+        },
+        {
+          q: "True or False: Saul kept eating and drinking while he was blind.",
+          type: "tf",
+          options: ["True", "False"],
+          correct: 1,
+          explain: "Acts 9:9 says for three days he was without sight, and did not eat or drink."
+        }
+      ]
+    },
+    {
+      title: "The New Man",
+      questions: [
+        {
+          q: "Who did God send to lay hands on Saul and heal his sight?",
+          type: "mc",
+          options: ["Barnabas", "Peter", "Ananias", "Philip"],
+          correct: 2,
+          explain: "Ananias, a disciple in Damascus. Not an apostle. Just a faithful believer who obeyed a scary assignment."
+        },
+        {
+          q: "When Saul's sight came back, what fell from his eyes?",
+          type: "mc",
+          options: ["Tears", "Something like scales", "A thin veil", "Bandages"],
+          correct: 1,
+          explain: "Scales. Luke is a doctor and uses a precise word. The physical healing mirrors what is happening in Saul's soul."
+        },
+        {
+          q: "What did Saul do right after his baptism?",
+          type: "mc",
+          options: ["Traveled to Jerusalem", "Preached Jesus in the synagogues", "Sailed home to Tarsus", "Fasted another forty days"],
+          correct: 1,
+          explain: "He went straight into the synagogues where he had planned to arrest believers."
+        }
+      ]
+    },
+    {
+      title: "The Escape",
+      questions: [
+        {
+          q: "How did Saul escape from Damascus?",
+          type: "mc",
+          options: ["Disguised as a merchant", "Through a secret tunnel", "Lowered in a basket over the city wall", "On a fast horse at dawn"],
+          correct: 2,
+          explain: "The mighty hunter of Christians makes his grand exit dangling over a wall in a woven basket."
+        },
+        {
+          q: "When Saul first came to Jerusalem after his conversion, who vouched for him?",
+          type: "mc",
+          options: ["Peter", "James", "Barnabas", "John"],
+          correct: 2,
+          explain: "Barnabas, true to his nickname Son of Encouragement, walked Saul into the room of apostles who were sure he was a spy."
+        },
+        {
+          q: "According to Galatians 1, where did Paul go after his conversion before returning to Damascus?",
+          type: "mc",
+          options: ["Tarsus", "Arabia", "Antioch of Syria", "Rome"],
+          correct: 1,
+          explain: "Galatians 1:17. Paul went off to Arabia first, then came back to Damascus. Luke does not mention this; Paul fills in the gap."
+        }
+      ]
+    }
+  ]
+},
+{
+  id: "first",
+  title: "Paul's First Mission",
+  cycles: [
+    {
+      title: "The Sending",
+      questions: [
+        {
+          q: "Which church sent out Saul and Barnabas as missionaries?",
+          type: "mc",
+          options: ["Jerusalem", "Antioch of Syria", "Damascus", "Tarsus"],
+          correct: 1,
+          explain: "Acts 13:1-3. The Holy Spirit spoke through the prophets and teachers at Antioch of Syria, and they laid hands on Saul and Barnabas and sent them off."
+        },
+        {
+          q: "What was the first island they sailed to?",
+          type: "mc",
+          options: ["Crete", "Cyprus", "Malta", "Rhodes"],
+          correct: 1,
+          explain: "Cyprus, which was Barnabas's home island. They started where Barnabas had connections."
+        },
+        {
+          q: "True or False: John Mark went with Paul and Barnabas on this first journey.",
+          type: "tf",
+          options: ["True", "False"],
+          correct: 0,
+          explain: "Acts 13:5. John Mark went along as their helper. He would later leave them in Perga, which becomes a sore point later."
+        }
+      ]
+    },
+    {
+      title: "The Sorcerer",
+      questions: [
+        {
+          q: "In Paphos, what was the name of the false prophet who tried to turn the Roman governor away from the gospel?",
+          type: "mc",
+          options: ["Simon the magician", "Bar-Jesus (Elymas)", "Demetrius the silversmith", "Sceva the priest"],
+          correct: 1,
+          explain: "Bar-Jesus, also called Elymas the sorcerer. He was a Jewish false prophet attached to the governor's court."
+        },
+        {
+          q: "What happened to Elymas after Paul confronted him?",
+          type: "mc",
+          options: ["He was killed by an angel", "He was struck blind", "He repented on the spot", "He fled the island"],
+          correct: 1,
+          explain: "Paul, filled with the Spirit, said he would be blind for a time. Mist and darkness fell on him. Paul, recently a blind man himself, understood the symbolism."
+        },
+        {
+          q: "Who was the Roman governor (proconsul) of Cyprus who believed?",
+          type: "mc",
+          options: ["Sergius Paulus", "Felix", "Festus", "Gallio"],
+          correct: 0,
+          explain: "Sergius Paulus. A high-ranking Roman official. Around this time Luke starts calling Saul by his Roman name, Paul."
+        }
+      ]
+    },
+    {
+      title: "The Pulpit and the Mob",
+      questions: [
+        {
+          q: "In Pisidian Antioch, where did Paul first preach?",
+          type: "mc",
+          options: ["The marketplace", "The synagogue", "The Roman forum", "The temple of Zeus"],
+          correct: 1,
+          explain: "Paul's pattern: synagogue first. He preached to the Jews and God-fearing Gentiles gathered there on the Sabbath."
+        },
+        {
+          q: "How did the unbelieving Jews of Pisidian Antioch drive Paul and Barnabas out?",
+          type: "mc",
+          options: ["They beat them with rods", "They stirred up devout women and leading men against them", "They sent Roman soldiers", "They burned down their lodging"],
+          correct: 1,
+          explain: "Acts 13:50. They incited prominent women and leading men. Paul and Barnabas shook the dust off their feet and moved on to Iconium."
+        },
+        {
+          q: "True or False: When the Jews rejected the gospel, Paul said he was now turning to the Gentiles.",
+          type: "tf",
+          options: ["True", "False"],
+          correct: 0,
+          explain: "Acts 13:46. Paul declared they would now turn to the Gentiles, quoting Isaiah about being a light to the nations."
+        }
+      ]
+    },
+    {
+      title: "Stoned and Standing",
+      questions: [
+        {
+          q: "In Lystra, what did the crowds want to do after Paul healed the lame man?",
+          type: "mc",
+          options: ["Make Paul a king", "Sacrifice oxen to Paul and Barnabas as gods", "Build them a temple", "Crown them with laurel"],
+          correct: 1,
+          explain: "They called Barnabas Zeus and Paul Hermes, and the priest of Zeus brought oxen and garlands to sacrifice. Paul and Barnabas tore their clothes in horror."
+        },
+        {
+          q: "What happened to Paul in Lystra after the would-be worship was stopped?",
+          type: "mc",
+          options: ["He was crowned by the city", "He was stoned and dragged out as dead", "He was arrested by Romans", "He was carried off in a chariot"],
+          correct: 1,
+          explain: "Jews from Antioch and Iconium came and turned the crowd. They stoned Paul, dragged him outside the city, and left him for dead. Then he got up and walked back into the city."
+        },
+        {
+          q: "Which young disciple was likely from Lystra and joined Paul on later journeys?",
+          type: "mc",
+          options: ["Titus", "Timothy", "Luke", "Tychicus"],
+          correct: 1,
+          explain: "Timothy. His mother Eunice and grandmother Lois were Jewish believers in Lystra. Paul took him along on the second journey."
+        },
+        {
+          q: "True or False: Paul and Barnabas returned through the same cities to strengthen the disciples before heading home.",
+          type: "tf",
+          options: ["True", "False"],
+          correct: 0,
+          explain: "Acts 14:21-23. They went back through Lystra, Iconium, and Pisidian Antioch to appoint elders and encourage the new churches, even though it was dangerous."
+        }
+      ]
+    }
+  ]
+},
+{
+  id: "second",
+  title: "Paul's Second Mission",
+  cycles: [
+    {
+      title: "The Council",
+      questions: [
+        {
+          q: "What was the main question debated at the Jerusalem Council?",
+          type: "mc",
+          options: [
+            "Whether Gentiles must be circumcised to be saved",
+            "Whether women could be apostles",
+            "Whether Christians could eat meat",
+            "Whether to keep the Passover"
+          ],
+          correct: 0,
+          explain: "Acts 15. Some Pharisee believers said Gentiles had to be circumcised and keep the law of Moses. Peter, Paul, Barnabas, and James all weighed in."
+        },
+        {
+          q: "Who delivered the final summary speech at the council?",
+          type: "mc",
+          options: ["Peter", "Paul", "James, the Lord's brother", "John"],
+          correct: 2,
+          explain: "James, the half-brother of Jesus, the leader of the Jerusalem church. His ruling was the final word: don't burden the Gentiles."
+        },
+        {
+          q: "True or False: The council told the Gentiles they did not need to be circumcised.",
+          type: "tf",
+          options: ["True", "False"],
+          correct: 0,
+          explain: "The Spirit and the apostles agreed: salvation is through grace, by faith in Jesus. Four practical requests were added, none of them circumcision."
+        }
+      ]
+    },
+    {
+      title: "The Sharp Disagreement",
+      questions: [
+        {
+          q: "Why did Paul and Barnabas split before the second journey?",
+          type: "mc",
+          options: [
+            "They disagreed about Gentile circumcision",
+            "Barnabas wanted to take John Mark; Paul refused",
+            "Barnabas wanted to stay in Antioch",
+            "They disagreed about where to go next"
+          ],
+          correct: 1,
+          explain: "Acts 15:36-40. Barnabas wanted to give John Mark a second chance. Paul said no. The disagreement was sharp. They parted."
+        },
+        {
+          q: "Who did Paul take instead of Barnabas?",
+          type: "mc",
+          options: ["Timothy", "Titus", "Silas", "Luke"],
+          correct: 2,
+          explain: "Silas, also called Silvanus. A leader from the Jerusalem church and a Roman citizen, which would matter later in Philippi."
+        },
+        {
+          q: "True or False: Paul and John Mark were permanently estranged after this.",
+          type: "tf",
+          options: ["True", "False"],
+          correct: 1,
+          explain: "In 2 Timothy 4:11 Paul writes from a Roman prison: bring Mark, he is useful to me for ministry. The breach was eventually healed."
+        }
+      ]
+    },
+    {
+      title: "The Vision",
+      questions: [
+        {
+          q: "Where did Paul receive the vision of the Macedonian man calling for help?",
+          type: "mc",
+          options: ["Ephesus", "Troas", "Athens", "Philippi"],
+          correct: 1,
+          explain: "Troas, on the coast of Asia Minor. The Spirit had blocked Paul from preaching in Asia and Bithynia. Then the vision came: a man of Macedonia begging him to cross over."
+        },
+        {
+          q: "True or False: Luke joined Paul's team around the time of the Macedonian vision.",
+          type: "tf",
+          options: ["True", "False"],
+          correct: 0,
+          explain: "The narrative shifts from 'they' to 'we' starting in Acts 16:10, around Troas. Luke is the author writing himself into the story."
+        },
+        {
+          q: "What was the first major Macedonian city Paul preached in?",
+          type: "mc",
+          options: ["Thessalonica", "Philippi", "Berea", "Athens"],
+          correct: 1,
+          explain: "Philippi, a Roman colony and leading city of that district. The gospel landed in Europe in a Roman military town."
+        }
+      ]
+    },
+    {
+      title: "Lydia",
+      questions: [
+        {
+          q: "What was Lydia's profession?",
+          type: "mc",
+          options: ["A weaver of linen", "A seller of purple cloth", "A scribe", "A potter"],
+          correct: 1,
+          explain: "Acts 16:14. Lydia was a dealer in purple cloth, an expensive luxury good. She was wealthy enough to host Paul's whole team in her home."
+        },
+        {
+          q: "Where did Paul find Lydia?",
+          type: "mc",
+          options: ["In the marketplace", "At a riverside place of prayer outside the city", "In the synagogue", "On a ship at the docks"],
+          correct: 1,
+          explain: "Philippi did not have enough Jewish men for a synagogue, so a small group met by the river. Paul went looking for them on the Sabbath and found Lydia."
+        },
+        {
+          q: "What happened to Paul and Silas in Philippi after the slave girl was freed from a spirit?",
+          type: "mc",
+          options: [
+            "They were chased out of the city",
+            "They were stoned by a mob",
+            "They were beaten and thrown in prison",
+            "They were put on a ship"
+          ],
+          correct: 2,
+          explain: "Her owners dragged Paul and Silas to the magistrates. They were beaten with rods and thrown in the inner cell with their feet in the stocks."
+        },
+        {
+          q: "What was happening at midnight in the Philippian jail right before the earthquake?",
+          type: "mc",
+          options: [
+            "Paul and Silas were trying to escape",
+            "Paul and Silas were praying and singing hymns",
+            "Paul was preaching to the jailer",
+            "The other prisoners were rioting"
+          ],
+          correct: 1,
+          explain: "Acts 16:25. Beaten, bleeding, locked in the deepest cell, Paul and Silas were singing. The other prisoners were listening."
+        }
+      ]
+    }
+  ]
+},
+{
+  id: "third",
+  title: "Paul's Third Mission",
+  cycles: [
+    {
+      title: "The Disciples",
+      questions: [
+        {
+          q: "In Ephesus, what baptism had the twelve disciples received?",
+          type: "mc",
+          options: [
+            "The baptism of Moses",
+            "John the Baptist's baptism",
+            "A pagan ritual washing",
+            "No baptism at all"
+          ],
+          correct: 1,
+          explain: "Acts 19:3. They had been baptized into John's baptism of repentance, but had never heard about the Holy Spirit, and had not been baptized in the name of Jesus."
+        },
+        {
+          q: "What did Paul do with the twelve disciples after explaining the gospel to them?",
+          type: "mc",
+          options: [
+            "Sent them to Jerusalem for instruction",
+            "Baptized them in the name of the Lord Jesus and laid hands on them",
+            "Asked them to teach in the synagogue",
+            "Wrote a letter to John the Baptist's followers"
+          ],
+          correct: 1,
+          explain: "Acts 19:5-6. Paul baptized them in the name of the Lord Jesus, laid hands on them, and the Holy Spirit came on them."
+        },
+        {
+          q: "True or False: Their first baptism was wrong, so Paul re-baptized them.",
+          type: "tf",
+          options: ["True", "False"],
+          correct: 0,
+          explain: "Their baptism was sincere but incomplete. John's baptism pointed forward to Jesus; now Jesus had come, died, and risen. Paul did not let it slide."
+        }
+      ]
+    },
+    {
+      title: "The Hall of Tyrannus",
+      questions: [
+        {
+          q: "How long did Paul teach daily in the hall of Tyrannus?",
+          type: "mc",
+          options: ["Three months", "One year", "Two years", "Five years"],
+          correct: 2,
+          explain: "Acts 19:10. For two years, every day, in a rented lecture hall. Luke says all the residents of Asia heard the word of the Lord."
+        },
+        {
+          q: "What unusual items healed the sick in Ephesus?",
+          type: "mc",
+          options: [
+            "Stones Paul had blessed",
+            "Handkerchiefs and aprons that had touched Paul",
+            "Olive oil from the temple",
+            "Water from a sacred well"
+          ],
+          correct: 1,
+          explain: "Acts 19:11-12. Even cloths that had touched Paul's skin healed the sick. God was doing extraordinary miracles by Paul's hands."
+        },
+        {
+          q: "What happened to the seven sons of Sceva when they tried to copy Paul's exorcisms?",
+          type: "mc",
+          options: [
+            "They were converted by Jesus",
+            "They were arrested by the city",
+            "The possessed man beat them up and they ran out naked and bleeding",
+            "They successfully cast out the demon"
+          ],
+          correct: 2,
+          explain: "Acts 19:16. The demon said: Jesus I know, and Paul I recognize, but who are you? Then the possessed man jumped on all seven of them."
+        },
+        {
+          q: "What did the magicians of Ephesus do publicly after this?",
+          type: "mc",
+          options: [
+            "They cursed Paul in the temple",
+            "They burned their magic scrolls (worth 50,000 pieces of silver)",
+            "They wrote a defense of their craft",
+            "They left for Athens"
+          ],
+          correct: 1,
+          explain: "Acts 19:19. They gathered their scrolls and burned them in public. The bill came to fifty thousand pieces of silver."
+        }
+      ]
+    },
+    {
+      title: "Eutychus",
+      questions: [
+        {
+          q: "In what city did Paul preach so long that a young man fell asleep, fell out the window, and died?",
+          type: "mc",
+          options: ["Ephesus", "Troas", "Miletus", "Corinth"],
+          correct: 1,
+          explain: "Troas. The upper room was hot from many lamps. Paul talked until midnight. Eutychus dozed off in the window and fell three stories."
+        },
+        {
+          q: "What was the young man's name?",
+          type: "mc",
+          options: ["Tychicus", "Eutychus", "Trophimus", "Onesimus"],
+          correct: 1,
+          explain: "Eutychus. His name means 'lucky.' Luke has a sense of humor."
+        },
+        {
+          q: "What did Paul do after Eutychus was raised?",
+          type: "mc",
+          options: [
+            "Left immediately",
+            "Went back upstairs, broke bread, and talked until daybreak",
+            "Sent for a doctor",
+            "Held a funeral"
+          ],
+          correct: 1,
+          explain: "Acts 20:11. Paul went back up, broke bread, ate, and kept talking until dawn. Then he walked to the next port."
+        }
+      ]
+    },
+    {
+      title: "Bound for Jerusalem",
+      questions: [
+        {
+          q: "Who urged Paul not to go up to Jerusalem when he reached Caesarea?",
+          type: "mc",
+          options: [
+            "Peter and James",
+            "The prophet Agabus and the disciples at Caesarea",
+            "Silas and Timothy",
+            "Luke alone"
+          ],
+          correct: 1,
+          explain: "Acts 21:10-12. Agabus took Paul's belt and tied his own hands and feet with it as a living warning."
+        },
+        {
+          q: "What did Paul say in response to those begging him not to go?",
+          type: "mc",
+          options: [
+            "I will pray about it tonight",
+            "I am ready not only to be bound but also to die in Jerusalem for the name of the Lord Jesus",
+            "Then I will turn back at once",
+            "The Lord has shown me I will be safe"
+          ],
+          correct: 1,
+          explain: "Acts 21:13. The disciples finally said, 'Let the will of the Lord be done.'"
+        },
+        {
+          q: "At Miletus, what did Paul warn the Ephesian elders to watch out for?",
+          type: "mc",
+          options: [
+            "Roman taxes and new laws",
+            "A coming famine",
+            "Fierce wolves coming in among them",
+            "A false letter claiming to be from him"
+          ],
+          correct: 2,
+          explain: "Acts 20:29. Paul said fierce wolves would come in among them, and that some of those wolves would rise from inside the elder group itself."
+        },
+        {
+          q: "True or False: Paul changed his plans about Jerusalem after Agabus's prophecy.",
+          type: "tf",
+          options: ["True", "False"],
+          correct: 1,
+          explain: "False. He went anyway. He walked into Jerusalem knowing exactly what was coming."
+        }
+      ]
+    }
+  ]
+}
+];
+
+/* Build a flat question pool, each tagged with its source journey + cycle title */
+function buildQuestionPool() {
+  const pool = [];
+  JOURNEYS.forEach(journey => {
+    journey.cycles.forEach(cycle => {
+      cycle.questions.forEach(q => {
+        pool.push({
+          ...q,
+          source: `${journey.title} · ${cycle.title}`
+        });
+      });
+    });
+  });
+  return pool;
+}
+const QUESTION_POOL = buildQuestionPool();
+
+/* =========================================================
+   CHARACTERS — Six apostles, each with distinct kit
+   ========================================================= */
+const APOSTLES = [
+  {
+    id: "paul",
+    name: "Paul",
+    role: "The Orator",
+    portraitInitial: "Π",  // Greek Pi (Paulos)
+    maxHP: 100,
+    strikeDamage: 22,
+    prayHeal: 15,
+    blurb: "Balanced. Hits steadily. Once per game, can re-answer a question he missed.",
+    specialName: "Damascus Light",
+    specialDesc: "Once per game. After missing a question, take a second shot at it. (Activated automatically when you miss.)",
+    specialType: "passive-retry",
+    color: "var(--seal-red)"
+  },
+  {
+    id: "peter",
+    name: "Peter",
+    role: "The Rock",
+    portraitInitial: "Κ",  // Greek Kappa for Kephas
+    maxHP: 120,
+    strikeDamage: 22,
+    prayHeal: 14,
+    blurb: "Tankiest hero (120 HP). Charges up a doubled Pentecost strike.",
+    specialName: "Pentecost Sermon",
+    specialDesc: "Once per game. Skip your turn to charge. Your next correct Strike deals double damage (44).",
+    specialType: "charge",
+    color: "var(--ink)"
+  },
+  {
+    id: "barnabas",
+    name: "Barnabas",
+    role: "The Encourager",
+    portraitInitial: "Β",
+    maxHP: 100,
+    strikeDamage: 18,
+    prayHeal: 22,
+    blurb: "Best healer. Lower attack but heavy heals.",
+    specialName: "Son of Encouragement",
+    specialDesc: "Once per game. Heal yourself for 40 HP. (No question needed — instant.)",
+    specialType: "self-heal-big",
+    color: "var(--moss)"
+  },
+  {
+    id: "john",
+    name: "John",
+    role: "The Beloved",
+    portraitInitial: "Ι",  // Greek Iota
+    maxHP: 100,
+    strikeDamage: 20,
+    prayHeal: 15,
+    blurb: "Strategic. Sees through the fog of any question.",
+    specialName: "Patmos Vision",
+    specialDesc: "Once per game. Remove one wrong answer from the next question you face.",
+    specialType: "remove-wrong",
+    color: "var(--leather)"
+  },
+  {
+    id: "silas",
+    name: "Silas",
+    role: "The Hymnsinger",
+    portraitInitial: "Σ",  // Greek Sigma
+    maxHP: 100,
+    strikeDamage: 20,
+    prayHeal: 15,
+    blurb: "Area attacker. Shakes the foundations and hits everyone.",
+    specialName: "Earthquake at Philippi",
+    specialDesc: "Once per game. Answer correctly to deal 18 damage to ALL opponents at once.",
+    specialType: "aoe",
+    color: "var(--ember)"
+  },
+  {
+    id: "apollos",
+    name: "Apollos",
+    role: "The Eloquent",
+    portraitInitial: "Α",  // Alpha
+    maxHP: 100,
+    strikeDamage: 20,
+    prayHeal: 15,
+    blurb: "Caster. Argues an opponent into silence for a turn.",
+    specialName: "Cornered Argument",
+    specialDesc: "Once per game. Answer correctly to force an opponent to skip their next turn.",
+    specialType: "skip-target",
+    color: "var(--gold)"
+  }
+];
+
+/* =========================================================
+   CHARACTER ART — inline SVG figures, parchment-ink style.
+   Each figure is drawn in a 100x140 viewBox with consistent
+   anatomy: robe trapezoid, sleeves, hands, round head. Items
+   and accents distinguish each apostle.
+   ========================================================= */
+const APOSTLE_ART = {
+  paul: `
+    <svg viewBox="0 0 100 140" xmlns="http://www.w3.org/2000/svg" class="apostle-svg" preserveAspectRatio="xMidYMax meet">
+      <defs>
+        <linearGradient id="paul-robe" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#9a3a26"/>
+          <stop offset="100%" stop-color="#5a1a0d"/>
+        </linearGradient>
+      </defs>
+      <!-- Shadow under feet -->
+      <ellipse cx="50" cy="135" rx="28" ry="3" fill="rgba(43,29,14,0.25)"/>
+      <!-- Robe body -->
+      <path d="M 28 64 L 38 56 L 62 56 L 72 64 L 84 132 L 16 132 Z" fill="url(#paul-robe)" stroke="#2b1d0e" stroke-width="1.5" stroke-linejoin="round"/>
+      <!-- Sash diagonal across robe -->
+      <path d="M 30 78 L 70 92 L 67 99 L 28 85 Z" fill="#c9a34f" stroke="#2b1d0e" stroke-width="0.8"/>
+      <!-- Right arm (sword side) -->
+      <path d="M 72 64 Q 80 78 84 92 L 78 96 L 68 76 Z" fill="url(#paul-robe)" stroke="#2b1d0e" stroke-width="1.5" stroke-linejoin="round"/>
+      <!-- Left arm holding scroll -->
+      <path d="M 28 64 Q 20 78 16 92 L 22 96 L 32 76 Z" fill="url(#paul-robe)" stroke="#2b1d0e" stroke-width="1.5" stroke-linejoin="round"/>
+      <!-- Scroll in left hand -->
+      <rect x="6" y="86" width="13" height="22" rx="2" fill="#f0e3c6" stroke="#2b1d0e" stroke-width="1"/>
+      <line x1="9" y1="92" x2="16" y2="92" stroke="#2b1d0e" stroke-width="0.5"/>
+      <line x1="9" y1="96" x2="16" y2="96" stroke="#2b1d0e" stroke-width="0.5"/>
+      <line x1="9" y1="100" x2="16" y2="100" stroke="#2b1d0e" stroke-width="0.5"/>
+      <!-- Sword at right hip -->
+      <line x1="78" y1="106" x2="94" y2="128" stroke="#d4b070" stroke-width="2.5" stroke-linecap="round"/>
+      <rect x="74" y="100" width="8" height="4" rx="1" fill="#8b4513" stroke="#2b1d0e" stroke-width="0.8"/>
+      <rect x="76" y="98" width="4" height="8" rx="1" fill="#8b4513" stroke="#2b1d0e" stroke-width="0.8"/>
+      <!-- Hands -->
+      <circle cx="20" cy="94" r="3.5" fill="#d4a875" stroke="#2b1d0e" stroke-width="1"/>
+      <circle cx="80" cy="94" r="3.5" fill="#d4a875" stroke="#2b1d0e" stroke-width="1"/>
+      <!-- Neck -->
+      <path d="M 44 52 L 56 52 L 55 58 L 45 58 Z" fill="#d4a875" stroke="#2b1d0e" stroke-width="1"/>
+      <!-- Head (bald) -->
+      <circle cx="50" cy="38" r="14" fill="#d4a875" stroke="#2b1d0e" stroke-width="1.5"/>
+      <!-- Ears -->
+      <ellipse cx="36" cy="38" rx="2.2" ry="3" fill="#c89968" stroke="#2b1d0e" stroke-width="1"/>
+      <ellipse cx="64" cy="38" rx="2.2" ry="3" fill="#c89968" stroke="#2b1d0e" stroke-width="1"/>
+      <!-- Beard -->
+      <path d="M 38 42 Q 50 54 62 42 Q 60 50 50 53 Q 40 50 38 42 Z" fill="#4a3520"/>
+      <!-- Eyes -->
+      <circle cx="44" cy="35" r="1.3" fill="#2b1d0e"/>
+      <circle cx="56" cy="35" r="1.3" fill="#2b1d0e"/>
+      <!-- Brows (intense) -->
+      <path d="M 40 31 L 47 32" stroke="#2b1d0e" stroke-width="1.2" stroke-linecap="round"/>
+      <path d="M 53 32 L 60 31" stroke="#2b1d0e" stroke-width="1.2" stroke-linecap="round"/>
+    </svg>
+  `,
+  peter: `
+    <svg viewBox="0 0 100 140" xmlns="http://www.w3.org/2000/svg" class="apostle-svg" preserveAspectRatio="xMidYMax meet">
+      <defs>
+        <linearGradient id="peter-robe" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#4a7a52"/>
+          <stop offset="100%" stop-color="#1f4527"/>
+        </linearGradient>
+      </defs>
+      <ellipse cx="50" cy="135" rx="30" ry="3" fill="rgba(43,29,14,0.25)"/>
+      <!-- Robe (broader, tankier) -->
+      <path d="M 24 64 L 36 54 L 64 54 L 76 64 L 86 132 L 14 132 Z" fill="url(#peter-robe)" stroke="#2b1d0e" stroke-width="1.5" stroke-linejoin="round"/>
+      <!-- Belt -->
+      <rect x="18" y="84" width="64" height="7" fill="#c9a34f" stroke="#2b1d0e" stroke-width="1"/>
+      <rect x="44" y="82" width="12" height="11" rx="1" fill="#e8c878" stroke="#2b1d0e" stroke-width="1"/>
+      <!-- Arms -->
+      <path d="M 24 64 Q 14 78 12 94 L 20 98 L 30 76 Z" fill="url(#peter-robe)" stroke="#2b1d0e" stroke-width="1.5" stroke-linejoin="round"/>
+      <path d="M 76 64 Q 86 78 88 94 L 80 98 L 70 76 Z" fill="url(#peter-robe)" stroke="#2b1d0e" stroke-width="1.5" stroke-linejoin="round"/>
+      <!-- Hands -->
+      <circle cx="18" cy="96" r="3.8" fill="#c89968" stroke="#2b1d0e" stroke-width="1"/>
+      <circle cx="82" cy="96" r="3.8" fill="#c89968" stroke="#2b1d0e" stroke-width="1"/>
+      <!-- Crossed keys held in front -->
+      <g transform="translate(50 102)">
+        <g transform="rotate(-22)">
+          <line x1="-14" y1="0" x2="14" y2="0" stroke="#c9a34f" stroke-width="2.8" stroke-linecap="round"/>
+          <circle cx="-16" cy="0" r="3.5" fill="none" stroke="#c9a34f" stroke-width="2.2"/>
+          <line x1="12" y1="-3" x2="12" y2="3" stroke="#c9a34f" stroke-width="2.2"/>
+          <line x1="14" y1="-3" x2="14" y2="3" stroke="#c9a34f" stroke-width="2.2"/>
+        </g>
+        <g transform="rotate(22)">
+          <line x1="-14" y1="0" x2="14" y2="0" stroke="#d4b070" stroke-width="2.8" stroke-linecap="round"/>
+          <circle cx="-16" cy="0" r="3.5" fill="none" stroke="#d4b070" stroke-width="2.2"/>
+          <line x1="12" y1="-3" x2="12" y2="3" stroke="#d4b070" stroke-width="2.2"/>
+          <line x1="14" y1="-3" x2="14" y2="3" stroke="#d4b070" stroke-width="2.2"/>
+        </g>
+      </g>
+      <!-- Neck -->
+      <path d="M 44 50 L 56 50 L 55 56 L 45 56 Z" fill="#c89968" stroke="#2b1d0e" stroke-width="1"/>
+      <!-- Head -->
+      <circle cx="50" cy="36" r="15" fill="#c89968" stroke="#2b1d0e" stroke-width="1.5"/>
+      <!-- Curly hair (top + sides) -->
+      <path d="M 35 30 Q 32 18 42 20 Q 46 14 50 18 Q 54 14 58 20 Q 68 18 65 30 Q 63 25 58 26 Q 55 22 50 24 Q 45 22 42 26 Q 37 25 35 30 Z" fill="#3a2410" stroke="#2b1d0e" stroke-width="0.8"/>
+      <!-- Ears -->
+      <ellipse cx="35" cy="38" rx="2" ry="3" fill="#b88560" stroke="#2b1d0e" stroke-width="1"/>
+      <ellipse cx="65" cy="38" rx="2" ry="3" fill="#b88560" stroke="#2b1d0e" stroke-width="1"/>
+      <!-- Full beard -->
+      <path d="M 35 40 Q 36 54 50 56 Q 64 54 65 40 Q 60 48 50 50 Q 40 48 35 40 Z" fill="#3a2410"/>
+      <!-- Eyes -->
+      <circle cx="44" cy="36" r="1.3" fill="#2b1d0e"/>
+      <circle cx="56" cy="36" r="1.3" fill="#2b1d0e"/>
+    </svg>
+  `,
+  barnabas: `
+    <svg viewBox="0 0 100 140" xmlns="http://www.w3.org/2000/svg" class="apostle-svg" preserveAspectRatio="xMidYMax meet">
+      <defs>
+        <linearGradient id="barn-robe" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#3a6088"/>
+          <stop offset="100%" stop-color="#1a3552"/>
+        </linearGradient>
+      </defs>
+      <ellipse cx="50" cy="135" rx="28" ry="3" fill="rgba(43,29,14,0.25)"/>
+      <!-- Robe -->
+      <path d="M 28 64 L 38 56 L 62 56 L 72 64 L 84 132 L 16 132 Z" fill="url(#barn-robe)" stroke="#2b1d0e" stroke-width="1.5" stroke-linejoin="round"/>
+      <!-- White sash across shoulders -->
+      <path d="M 35 56 L 65 56 L 70 64 L 30 64 Z" fill="#f0e3c6" stroke="#2b1d0e" stroke-width="1"/>
+      <path d="M 32 64 L 68 64 L 66 70 L 34 70 Z" fill="#e0d0a0"/>
+      <!-- Arms (open, welcoming, raised slightly) -->
+      <path d="M 28 64 Q 14 70 8 84 L 14 90 L 32 76 Z" fill="url(#barn-robe)" stroke="#2b1d0e" stroke-width="1.5" stroke-linejoin="round"/>
+      <path d="M 72 64 Q 86 70 92 84 L 86 90 L 68 76 Z" fill="url(#barn-robe)" stroke="#2b1d0e" stroke-width="1.5" stroke-linejoin="round"/>
+      <!-- Open hands (palms forward, fingers spread) -->
+      <g transform="translate(12 88)">
+        <circle cx="0" cy="0" r="4" fill="#d4a87a" stroke="#2b1d0e" stroke-width="1"/>
+        <line x1="-2" y1="-3" x2="-3" y2="-7" stroke="#2b1d0e" stroke-width="1" stroke-linecap="round"/>
+        <line x1="0" y1="-4" x2="0" y2="-9" stroke="#2b1d0e" stroke-width="1" stroke-linecap="round"/>
+        <line x1="2" y1="-3" x2="3" y2="-7" stroke="#2b1d0e" stroke-width="1" stroke-linecap="round"/>
+      </g>
+      <g transform="translate(88 88)">
+        <circle cx="0" cy="0" r="4" fill="#d4a87a" stroke="#2b1d0e" stroke-width="1"/>
+        <line x1="-2" y1="-3" x2="-3" y2="-7" stroke="#2b1d0e" stroke-width="1" stroke-linecap="round"/>
+        <line x1="0" y1="-4" x2="0" y2="-9" stroke="#2b1d0e" stroke-width="1" stroke-linecap="round"/>
+        <line x1="2" y1="-3" x2="3" y2="-7" stroke="#2b1d0e" stroke-width="1" stroke-linecap="round"/>
+      </g>
+      <!-- Neck -->
+      <path d="M 44 52 L 56 52 L 55 58 L 45 58 Z" fill="#d4a87a" stroke="#2b1d0e" stroke-width="1"/>
+      <!-- Head -->
+      <circle cx="50" cy="38" r="14" fill="#d4a87a" stroke="#2b1d0e" stroke-width="1.5"/>
+      <!-- Brown wavy hair -->
+      <path d="M 36 32 Q 38 22 44 22 Q 50 18 56 22 Q 62 22 64 32 Q 62 26 56 28 Q 50 24 44 28 Q 38 26 36 32 Z" fill="#5a3a1f" stroke="#2b1d0e" stroke-width="0.8"/>
+      <!-- Ears -->
+      <ellipse cx="36" cy="38" rx="2" ry="3" fill="#c39468" stroke="#2b1d0e" stroke-width="1"/>
+      <ellipse cx="64" cy="38" rx="2" ry="3" fill="#c39468" stroke="#2b1d0e" stroke-width="1"/>
+      <!-- Trim beard -->
+      <path d="M 40 42 Q 50 50 60 42 Q 58 48 50 50 Q 42 48 40 42 Z" fill="#5a3a1f"/>
+      <!-- Eyes (soft, kind) -->
+      <path d="M 42 35 Q 44 33.5 46 35" stroke="#2b1d0e" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+      <path d="M 54 35 Q 56 33.5 58 35" stroke="#2b1d0e" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+      <!-- Smile -->
+      <path d="M 46 44 Q 50 46 54 44" stroke="#2b1d0e" stroke-width="0.8" fill="none" stroke-linecap="round"/>
+    </svg>
+  `,
+  john: `
+    <svg viewBox="0 0 100 140" xmlns="http://www.w3.org/2000/svg" class="apostle-svg" preserveAspectRatio="xMidYMax meet">
+      <defs>
+        <linearGradient id="john-robe" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#e8d6a8"/>
+          <stop offset="100%" stop-color="#b89865"/>
+        </linearGradient>
+      </defs>
+      <ellipse cx="50" cy="135" rx="28" ry="3" fill="rgba(43,29,14,0.25)"/>
+      <!-- Pale robe -->
+      <path d="M 28 64 L 38 56 L 62 56 L 72 64 L 84 132 L 16 132 Z" fill="url(#john-robe)" stroke="#2b1d0e" stroke-width="1.5" stroke-linejoin="round"/>
+      <!-- Purple sash (beloved disciple) -->
+      <path d="M 32 56 L 38 80 L 35 86 L 28 64 Z" fill="#6b3a7a" stroke="#2b1d0e" stroke-width="0.8"/>
+      <path d="M 28 84 L 72 84 L 70 92 L 30 92 Z" fill="#6b3a7a" stroke="#2b1d0e" stroke-width="0.8"/>
+      <!-- Arms (one holding chalice, one holding scroll) -->
+      <path d="M 28 64 Q 20 78 16 92 L 22 96 L 32 76 Z" fill="url(#john-robe)" stroke="#2b1d0e" stroke-width="1.5" stroke-linejoin="round"/>
+      <path d="M 72 64 Q 80 78 84 92 L 78 96 L 68 76 Z" fill="url(#john-robe)" stroke="#2b1d0e" stroke-width="1.5" stroke-linejoin="round"/>
+      <!-- Hands -->
+      <circle cx="20" cy="94" r="3.5" fill="#dab080" stroke="#2b1d0e" stroke-width="1"/>
+      <circle cx="80" cy="94" r="3.5" fill="#dab080" stroke="#2b1d0e" stroke-width="1"/>
+      <!-- Chalice (left hand) -->
+      <path d="M 11 84 L 21 84 L 19 92 L 13 92 Z" fill="#c9a34f" stroke="#2b1d0e" stroke-width="1"/>
+      <rect x="14.5" y="92" width="3" height="4" fill="#c9a34f" stroke="#2b1d0e" stroke-width="0.8"/>
+      <rect x="12" y="96" width="8" height="2" fill="#c9a34f" stroke="#2b1d0e" stroke-width="0.8"/>
+      <!-- Quill / palm branch (right hand) -->
+      <line x1="86" y1="84" x2="92" y2="70" stroke="#5a3a1f" stroke-width="1.5" stroke-linecap="round"/>
+      <path d="M 92 70 Q 95 65 96 60 Q 92 68 89 72 Q 95 70 96 66" fill="#4a6b3a" stroke="#2b1d0e" stroke-width="0.6"/>
+      <!-- Neck -->
+      <path d="M 44 52 L 56 52 L 55 58 L 45 58 Z" fill="#dab080" stroke="#2b1d0e" stroke-width="1"/>
+      <!-- Young face: smooth head -->
+      <circle cx="50" cy="38" r="14" fill="#dab080" stroke="#2b1d0e" stroke-width="1.5"/>
+      <!-- Dark wavy hair (longer, younger style) -->
+      <path d="M 35 30 Q 36 20 44 20 Q 50 16 56 20 Q 64 20 65 30 Q 67 36 64 42 Q 62 30 56 28 Q 50 24 44 28 Q 38 30 36 42 Q 33 36 35 30 Z" fill="#3a2410" stroke="#2b1d0e" stroke-width="0.8"/>
+      <!-- Ears -->
+      <ellipse cx="36" cy="40" rx="2" ry="3" fill="#c8a070" stroke="#2b1d0e" stroke-width="1"/>
+      <ellipse cx="64" cy="40" rx="2" ry="3" fill="#c8a070" stroke="#2b1d0e" stroke-width="1"/>
+      <!-- No beard (youngest apostle) -->
+      <!-- Eyes -->
+      <circle cx="44" cy="37" r="1.3" fill="#2b1d0e"/>
+      <circle cx="56" cy="37" r="1.3" fill="#2b1d0e"/>
+      <!-- Small smile -->
+      <path d="M 47 45 Q 50 46 53 45" stroke="#2b1d0e" stroke-width="0.7" fill="none" stroke-linecap="round"/>
+    </svg>
+  `,
+  silas: `
+    <svg viewBox="0 0 100 140" xmlns="http://www.w3.org/2000/svg" class="apostle-svg" preserveAspectRatio="xMidYMax meet">
+      <defs>
+        <linearGradient id="silas-robe" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#d4a040"/>
+          <stop offset="100%" stop-color="#8b6020"/>
+        </linearGradient>
+      </defs>
+      <ellipse cx="50" cy="135" rx="28" ry="3" fill="rgba(43,29,14,0.25)"/>
+      <!-- Robe -->
+      <path d="M 28 64 L 38 56 L 62 56 L 72 64 L 84 132 L 16 132 Z" fill="url(#silas-robe)" stroke="#2b1d0e" stroke-width="1.5" stroke-linejoin="round"/>
+      <!-- Brown rope belt -->
+      <rect x="20" y="86" width="60" height="5" fill="#5a3a1f" stroke="#2b1d0e" stroke-width="0.8"/>
+      <!-- Arms cradling lyre -->
+      <path d="M 28 64 Q 24 78 24 90 L 30 92 L 34 76 Z" fill="url(#silas-robe)" stroke="#2b1d0e" stroke-width="1.5" stroke-linejoin="round"/>
+      <path d="M 72 64 Q 76 78 76 90 L 70 92 L 66 76 Z" fill="url(#silas-robe)" stroke="#2b1d0e" stroke-width="1.5" stroke-linejoin="round"/>
+      <!-- Hands -->
+      <circle cx="28" cy="92" r="3.5" fill="#c89968" stroke="#2b1d0e" stroke-width="1"/>
+      <circle cx="72" cy="92" r="3.5" fill="#c89968" stroke="#2b1d0e" stroke-width="1"/>
+      <!-- Lyre (centered, cradled in arms) -->
+      <g transform="translate(50 96)">
+        <!-- Base/body -->
+        <path d="M -12 0 Q -14 6 -10 10 Q 0 12 10 10 Q 14 6 12 0 L 10 -2 L -10 -2 Z" fill="#8b4513" stroke="#2b1d0e" stroke-width="1"/>
+        <!-- Curved arms -->
+        <path d="M -12 0 Q -18 -8 -14 -18" fill="none" stroke="#5a3a1f" stroke-width="2.2" stroke-linecap="round"/>
+        <path d="M 12 0 Q 18 -8 14 -18" fill="none" stroke="#5a3a1f" stroke-width="2.2" stroke-linecap="round"/>
+        <!-- Crossbar -->
+        <line x1="-14" y1="-18" x2="14" y2="-18" stroke="#5a3a1f" stroke-width="2"/>
+        <!-- Strings -->
+        <line x1="-7" y1="-18" x2="-7" y2="-2" stroke="#f0e3c6" stroke-width="0.6"/>
+        <line x1="-3" y1="-18" x2="-3" y2="-2" stroke="#f0e3c6" stroke-width="0.6"/>
+        <line x1="1" y1="-18" x2="1" y2="-2" stroke="#f0e3c6" stroke-width="0.6"/>
+        <line x1="5" y1="-18" x2="5" y2="-2" stroke="#f0e3c6" stroke-width="0.6"/>
+      </g>
+      <!-- Neck -->
+      <path d="M 44 52 L 56 52 L 55 58 L 45 58 Z" fill="#c89968" stroke="#2b1d0e" stroke-width="1"/>
+      <!-- Head -->
+      <circle cx="50" cy="38" r="14" fill="#c89968" stroke="#2b1d0e" stroke-width="1.5"/>
+      <!-- Hair -->
+      <path d="M 36 30 Q 38 20 44 22 Q 50 18 56 22 Q 62 20 64 30 Q 62 26 56 28 Q 50 24 44 28 Q 38 26 36 30 Z" fill="#4a3520" stroke="#2b1d0e" stroke-width="0.8"/>
+      <!-- Ears -->
+      <ellipse cx="36" cy="38" rx="2" ry="3" fill="#b8855a" stroke="#2b1d0e" stroke-width="1"/>
+      <ellipse cx="64" cy="38" rx="2" ry="3" fill="#b8855a" stroke="#2b1d0e" stroke-width="1"/>
+      <!-- Beard -->
+      <path d="M 38 42 Q 50 52 62 42 Q 60 50 50 52 Q 40 50 38 42 Z" fill="#4a3520"/>
+      <!-- Eyes (eyes closed, singing) -->
+      <path d="M 42 35 Q 44 37 46 35" stroke="#2b1d0e" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+      <path d="M 54 35 Q 56 37 58 35" stroke="#2b1d0e" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+      <!-- Mouth open (singing) -->
+      <ellipse cx="50" cy="44" rx="2" ry="2.5" fill="#3a1a0a" stroke="#2b1d0e" stroke-width="0.8"/>
+    </svg>
+  `,
+  apollos: `
+    <svg viewBox="0 0 100 140" xmlns="http://www.w3.org/2000/svg" class="apostle-svg" preserveAspectRatio="xMidYMax meet">
+      <defs>
+        <linearGradient id="apo-robe" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#6b3a7a"/>
+          <stop offset="100%" stop-color="#3a1a4a"/>
+        </linearGradient>
+      </defs>
+      <ellipse cx="50" cy="135" rx="28" ry="3" fill="rgba(43,29,14,0.25)"/>
+      <!-- Robe -->
+      <path d="M 28 64 L 38 56 L 62 56 L 72 64 L 84 132 L 16 132 Z" fill="url(#apo-robe)" stroke="#2b1d0e" stroke-width="1.5" stroke-linejoin="round"/>
+      <!-- Gold trim at bottom -->
+      <path d="M 16 128 L 84 128 L 84 132 L 16 132 Z" fill="#c9a34f" stroke="#2b1d0e" stroke-width="0.8"/>
+      <!-- Gold collar -->
+      <path d="M 38 56 L 62 56 L 60 62 L 40 62 Z" fill="#c9a34f" stroke="#2b1d0e" stroke-width="0.8"/>
+      <!-- Right arm raised (gesturing) -->
+      <path d="M 72 64 Q 88 56 86 42 L 80 40 L 68 60 Z" fill="url(#apo-robe)" stroke="#2b1d0e" stroke-width="1.5" stroke-linejoin="round"/>
+      <!-- Right hand raised, finger extended -->
+      <circle cx="86" cy="40" r="3.5" fill="#c89968" stroke="#2b1d0e" stroke-width="1"/>
+      <line x1="86" y1="36" x2="88" y2="28" stroke="#2b1d0e" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="86" y1="36" x2="86" y2="32" stroke="#c89968" stroke-width="2.5" stroke-linecap="round"/>
+      <!-- Left arm holding open book -->
+      <path d="M 28 64 Q 22 78 22 92 L 30 94 L 34 76 Z" fill="url(#apo-robe)" stroke="#2b1d0e" stroke-width="1.5" stroke-linejoin="round"/>
+      <circle cx="26" cy="94" r="3.5" fill="#c89968" stroke="#2b1d0e" stroke-width="1"/>
+      <!-- Open book -->
+      <g transform="translate(20 98)">
+        <path d="M 0 0 L 14 -2 L 14 10 L 0 12 Z" fill="#f0e3c6" stroke="#2b1d0e" stroke-width="1"/>
+        <path d="M 14 -2 L 28 0 L 28 12 L 14 10 Z" fill="#e8d6a8" stroke="#2b1d0e" stroke-width="1"/>
+        <line x1="14" y1="-2" x2="14" y2="10" stroke="#2b1d0e" stroke-width="0.8"/>
+        <line x1="3" y1="3" x2="11" y2="2" stroke="#2b1d0e" stroke-width="0.4"/>
+        <line x1="3" y1="6" x2="11" y2="5" stroke="#2b1d0e" stroke-width="0.4"/>
+        <line x1="17" y1="3" x2="25" y2="4" stroke="#2b1d0e" stroke-width="0.4"/>
+        <line x1="17" y1="6" x2="25" y2="7" stroke="#2b1d0e" stroke-width="0.4"/>
+      </g>
+      <!-- Neck -->
+      <path d="M 44 52 L 56 52 L 55 58 L 45 58 Z" fill="#c89968" stroke="#2b1d0e" stroke-width="1"/>
+      <!-- Head -->
+      <circle cx="50" cy="38" r="14" fill="#c89968" stroke="#2b1d0e" stroke-width="1.5"/>
+      <!-- Neatly groomed hair -->
+      <path d="M 36 32 Q 36 22 44 22 Q 50 19 56 22 Q 64 22 64 32 Q 60 28 56 28 Q 50 25 44 28 Q 40 28 36 32 Z" fill="#3a2410" stroke="#2b1d0e" stroke-width="0.8"/>
+      <!-- Ears -->
+      <ellipse cx="36" cy="38" rx="2" ry="3" fill="#b8855a" stroke="#2b1d0e" stroke-width="1"/>
+      <ellipse cx="64" cy="38" rx="2" ry="3" fill="#b8855a" stroke="#2b1d0e" stroke-width="1"/>
+      <!-- Trimmed beard -->
+      <path d="M 42 42 Q 50 48 58 42 Q 56 47 50 49 Q 44 47 42 42 Z" fill="#3a2410"/>
+      <!-- Eyes (sharp, alert) -->
+      <circle cx="44" cy="35" r="1.3" fill="#2b1d0e"/>
+      <circle cx="56" cy="35" r="1.3" fill="#2b1d0e"/>
+      <!-- Slight smile of confidence -->
+      <path d="M 47 45 Q 50 46 53 45" stroke="#2b1d0e" stroke-width="0.7" fill="none" stroke-linecap="round"/>
+    </svg>
+  `
+};
+
+function apostleArt(id) {
+  return APOSTLE_ART[id] || '';
+}
+
+function findApostle(id) { return APOSTLES.find(a => a.id === id); }
+
+/* =========================================================
+   STATE
+   ========================================================= */
+const state = {
+  phase: "title",       // title | setup | select | battle | victory
+  playerCount: 3,
+  players: [],          // [{name, apostleId, hp, maxHp, alive, defending, charging, skippingTurn, specialUsed, removeWrongActive}]
+  selectIdx: 0,         // which player is currently picking an apostle
+  currentTurn: 0,       // index of player whose turn it is
+  pendingAction: null,  // 'strike' | 'pray' | 'defend' | 'special'
+  pendingTarget: null,  // player index for attack target
+  currentQuestion: null,
+  questionRevealed: false,  // host has tapped to reveal answer choices
+  awaitingAnswer: false,
+  answerResult: null,   // 'correct' | 'wrong' | null
+  stealing: false,
+  stealerIdx: null,     // who is attempting steal
+  questionPool: [],
+  usedQuestions: new Set(),
+  log: [],
+  audioOn: false,
+  removedOption: -1     // for John's Patmos Vision
+};
+
+/* =========================================================
+   UTILITIES
+   ========================================================= */
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+function drawQuestion() {
+  // refill pool if exhausted
+  if (state.usedQuestions.size >= QUESTION_POOL.length) {
+    state.usedQuestions.clear();
+  }
+  let attempts = 0;
+  while (attempts < 50) {
+    const idx = Math.floor(Math.random() * QUESTION_POOL.length);
+    if (!state.usedQuestions.has(idx)) {
+      state.usedQuestions.add(idx);
+      return { ...QUESTION_POOL[idx], poolIdx: idx };
+    }
+    attempts++;
+  }
+  // fallback
+  return QUESTION_POOL[0];
+}
+
+function alivePlayers() {
+  return state.players.filter(p => p.alive);
+}
+
+function log(msg) {
+  state.log.push(msg);
+  if (state.log.length > 50) state.log.shift();
+}
+
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+/* =========================================================
+   RENDER ROOT
+   ========================================================= */
+function render() {
+  const app = document.getElementById("app");
+  let html = "";
+  if (state.phase === "title")   html = renderTitle();
+  if (state.phase === "setup")   html = renderSetup();
+  if (state.phase === "select")  html = renderSelect();
+  if (state.phase === "battle")  html = renderBattle();
+  if (state.phase === "victory") html = renderVictory();
+  app.innerHTML = html;
+  attachHandlers();
+  updateAudioToggle();
+}
+
+function updateAudioToggle() {
+  const t = document.getElementById("audio-toggle");
+  if (!t) return;
+  if (state.audioOn) { t.classList.add("on"); t.textContent = "♫"; }
+  else { t.classList.remove("on"); t.textContent = "♪"; }
+}
+
+/* =========================================================
+   TITLE SCREEN
+   ========================================================= */
+function renderTitle() {
+  return `
+  <div class="panel title-screen stagger">
+    <div class="title-mark">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs>
+          <radialGradient id="goldGrad" cx="50%" cy="40%" r="50%">
+            <stop offset="0%" stop-color="#e8c878" />
+            <stop offset="100%" stop-color="#8b4513" />
+          </radialGradient>
+        </defs>
+        <!-- Laurel wreath -->
+        <g fill="none" stroke="#8b4513" stroke-width="1.5" opacity="0.8">
+          <path d="M 50 88 Q 18 70, 14 38 Q 22 22, 42 18" />
+          <path d="M 50 88 Q 82 70, 86 38 Q 78 22, 58 18" />
+        </g>
+        <g fill="#4a6b3a" opacity="0.85">
+          <ellipse cx="20" cy="62" rx="4" ry="1.8" transform="rotate(-40 20 62)" />
+          <ellipse cx="17" cy="48" rx="4" ry="1.8" transform="rotate(-20 17 48)" />
+          <ellipse cx="20" cy="34" rx="4" ry="1.8" transform="rotate(10 20 34)" />
+          <ellipse cx="30" cy="22" rx="4" ry="1.8" transform="rotate(35 30 22)" />
+          <ellipse cx="80" cy="62" rx="4" ry="1.8" transform="rotate(40 80 62)" />
+          <ellipse cx="83" cy="48" rx="4" ry="1.8" transform="rotate(20 83 48)" />
+          <ellipse cx="80" cy="34" rx="4" ry="1.8" transform="rotate(-10 80 34)" />
+          <ellipse cx="70" cy="22" rx="4" ry="1.8" transform="rotate(-35 70 22)" />
+        </g>
+        <!-- Crossed swords (spirit) -->
+        <g stroke="url(#goldGrad)" stroke-width="2.5" stroke-linecap="round">
+          <line x1="32" y1="72" x2="68" y2="32" />
+          <line x1="68" y1="72" x2="32" y2="32" />
+        </g>
+        <!-- Center cross -->
+        <g fill="url(#goldGrad)" stroke="#2b1d0e" stroke-width="0.5">
+          <rect x="47" y="38" width="6" height="26" rx="1" />
+          <rect x="40" y="46" width="20" height="6" rx="1" />
+        </g>
+      </svg>
+    </div>
+    <div class="tagline">A Sacred Knowledge Duel</div>
+    <h1>Apostles' Arena</h1>
+    <p class="blurb">Three contenders. Six apostles. One arena of the mind. Answer well, strike true, outlast your foes — and learn the road of the gospel as it spread across the Mediterranean.</p>
+
+    <div class="title-rules">
+      <h3>How To Play</h3>
+      <ol>
+        <li>Each player picks an apostle with a unique special ability.</li>
+        <li>On your turn, choose to <strong>Strike</strong>, <strong>Pray</strong> (heal), <strong>Defend</strong>, or use your <strong>Special</strong>.</li>
+        <li>A New Testament question appears. Answer correctly and your move lands.</li>
+        <li>Miss? Any opponent can <strong>Steal</strong> the question — and if they get it right, they strike you back.</li>
+        <li>Last apostle standing wins.</li>
+      </ol>
+    </div>
+
+    <button class="btn-primary" id="begin-btn">Begin the Contest</button>
+  </div>
+  `;
+}
+
+/* =========================================================
+   SETUP SCREEN
+   ========================================================= */
+function renderSetup() {
+  const slots = [];
+  for (let i = 0; i < state.playerCount; i++) {
+    const cls = `p${i+1}`;
+    const colorVar = i === 0 ? 'var(--p1)' : (i === 1 ? 'var(--p2)' : 'var(--p3)');
+    slots.push(`
+      <div class="name-input-row">
+        <div class="badge" style="background:${colorVar};">${i+1}</div>
+        <input type="text" id="name-${i}" placeholder="Contender ${i+1} name" maxlength="14" value="${escapeHtml(state.players[i]?.name || '')}" />
+      </div>
+    `);
+  }
+  return `
+  <div class="panel stagger">
+    <div class="select-header">
+      <div class="who">Step One</div>
+      <h2>Choose Your Contenders</h2>
+    </div>
+
+    <div class="instructions">How many will enter the arena?</div>
+    <div class="player-count-row">
+      <button class="${state.playerCount === 2 ? 'active' : ''}" data-count="2">2</button>
+      <button class="${state.playerCount === 3 ? 'active' : ''}" data-count="3">3</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="instructions">Enter each contender's name</div>
+    ${slots.join('')}
+
+    <div class="divider"></div>
+    <div style="text-align:center;">
+      <button class="btn-secondary" id="back-btn" style="margin-right:8px;">Back</button>
+      <button class="btn-primary" id="setup-continue">To the Apostles →</button>
+    </div>
+  </div>
+  `;
+}
+
+/* =========================================================
+   CHARACTER SELECT
+   ========================================================= */
+function renderSelect() {
+  const player = state.players[state.selectIdx];
+  const takenIds = new Set(state.players.filter(p => p.apostleId).map(p => p.apostleId));
+
+  const cards = APOSTLES.map(a => {
+    const taken = takenIds.has(a.id) && state.players[state.selectIdx]?.apostleId !== a.id;
+    const selected = state.players[state.selectIdx]?.apostleId === a.id;
+    return `
+      <div class="char-card ${taken ? 'taken' : ''} ${selected ? 'selected' : ''}" data-apostle="${a.id}">
+        <div class="char-card-top">
+          ${apostleArt(a.id)}
+          <div class="char-card-titles">
+            <h3>${a.name}</h3>
+            <div class="char-role">${a.role}</div>
+            <div class="char-stats">
+              <span class="stat">HP <strong>${a.maxHP}</strong></span>
+              <span class="stat">Strike <strong>${a.strikeDamage}</strong></span>
+              <span class="stat">Heal <strong>${a.prayHeal}</strong></span>
+            </div>
+          </div>
+        </div>
+        <div class="char-special"><strong>${a.specialName}</strong> — ${a.specialDesc}</div>
+      </div>
+    `;
+  }).join('');
+
+  const allChosen = state.players.every(p => p.apostleId);
+
+  return `
+  <div class="panel stagger">
+    <div class="select-header">
+      <div class="who">Player ${state.selectIdx + 1} of ${state.playerCount} · ${escapeHtml(player.name || 'Contender ' + (state.selectIdx+1))}</div>
+      <h2>Choose Your Apostle</h2>
+    </div>
+    <div class="char-grid">${cards}</div>
+    <div style="text-align:center; margin-top: 10px;">
+      ${state.selectIdx > 0 ? `<button class="btn-secondary" id="select-back" style="margin-right:8px;">← Back</button>` : ''}
+      <button class="btn-primary" id="select-confirm" ${player.apostleId ? '' : 'disabled'}>
+        ${state.selectIdx === state.playerCount - 1 ? 'To the Arena →' : 'Lock In →'}
+      </button>
+    </div>
+  </div>
+  `;
+}
+
+/* =========================================================
+   BATTLE SCREEN
+   ========================================================= */
+function renderBattle() {
+  // Combatant stage — characters arranged in a row, RPG-style
+  const stageCombatants = state.players.map((p, i) => {
+    const apostle = findApostle(p.apostleId);
+    const hpPct = clamp((p.hp / p.maxHp) * 100, 0, 100);
+    let barCls = 'healthy';
+    if (hpPct < 30) barCls = 'critical';
+    else if (hpPct < 60) barCls = 'warning';
+
+    const isActive = i === state.currentTurn && !state.stealing && p.alive;
+    const isStealActive = state.stealing && state.stealerIdx === i;
+    const isTargetable = state.pendingAction === 'strike' && state.pendingTarget === null && state.currentQuestion === null && i !== state.currentTurn && p.alive;
+    const isApolloTargetable = state.pendingAction === 'special-skip' && state.pendingTarget === null && state.currentQuestion === null && i !== state.currentTurn && p.alive;
+    const targetable = isTargetable || isApolloTargetable;
+    const isFallen = !p.alive;
+
+    const stateClasses = [
+      (isActive || isStealActive) ? 'is-active' : '',
+      targetable ? 'is-targetable' : '',
+      isFallen ? 'is-fallen' : '',
+      p.defending ? 'is-defending' : '',
+      p.charging ? 'is-charging' : ''
+    ].filter(Boolean).join(' ');
+
+    const chips = [];
+    if (p.defending) chips.push(`<span class="status-chip defending">✚ Defending</span>`);
+    if (p.charging) chips.push(`<span class="status-chip charging">⚡ Charging</span>`);
+    if (p.skippingTurn) chips.push(`<span class="status-chip skipping">⊘ Skip Next</span>`);
+    if (p.removeWrongActive) chips.push(`<span class="status-chip special-ready">◉ Vision</span>`);
+
+    return `
+      <div class="combatant ${stateClasses}" data-player="${i}" ${targetable ? 'data-target="1"' : ''}>
+        <div class="combatant-art-wrap">${apostleArt(p.apostleId)}</div>
+        <div class="combatant-hp">
+          <div class="hp-row-inner">
+            <span class="combatant-hp-numbers">${Math.max(0, p.hp)} / ${p.maxHp}</span>
+          </div>
+          <div class="hp-bar-outer"><div class="hp-bar-inner ${barCls}" style="width:${hpPct}%;"></div></div>
+        </div>
+        <div class="combatant-name">${escapeHtml(p.name)}<span class="apostle-tag">${apostle.name}</span></div>
+        <div class="combatant-chips">${chips.join('')}</div>
+      </div>
+    `;
+  }).join('');
+
+  // Middle area
+  let middleHtml = '';
+  if (state.currentQuestion) {
+    middleHtml = renderQuestion();
+  } else if ((state.pendingAction === 'strike' || state.pendingAction === 'special-skip') && state.pendingTarget === null) {
+    const promptText = state.pendingAction === 'special-skip'
+      ? `Choose who to silence — tap an opponent`
+      : `Choose your target — tap an opponent`;
+    middleHtml = `
+      <div class="turn-banner">${promptText}</div>
+      <div style="text-align:center;">
+        <button class="btn-ghost" id="cancel-action">Cancel</button>
+      </div>
+    `;
+  } else {
+    middleHtml = renderActionMenu();
+  }
+
+  // Battle log
+  const logHtml = state.log.length ? `
+    <div class="battle-log">
+      ${state.log.slice(-6).map(e => `<div class="log-entry">${e}</div>`).join('')}
+    </div>
+  ` : '';
+
+  const currentP = state.players[state.currentTurn];
+  const currentApostle = findApostle(currentP.apostleId);
+
+  const turnBannerHtml = (!state.currentQuestion && !state.pendingAction && !state.stealing) ? `
+    <div class="turn-banner">
+      <strong>${escapeHtml(currentP.name)}'s turn</strong> · ${currentApostle.name} the ${currentApostle.role}
+    </div>
+  ` : '';
+
+  return `
+  <div>
+    <div class="battle-stage players-${state.players.length}">${stageCombatants}</div>
+    ${turnBannerHtml}
+    ${middleHtml}
+    ${logHtml}
+  </div>
+  `;
+}
+
+function renderActionMenu() {
+  const p = state.players[state.currentTurn];
+  const apostle = findApostle(p.apostleId);
+
+  // Determine special button state
+  let specialEnabled = !p.specialUsed;
+  let specialLabel = apostle.specialName;
+  let specialSub = '';
+  if (p.specialUsed) {
+    specialSub = '(spent)';
+    specialEnabled = false;
+  } else if (apostle.specialType === 'passive-retry') {
+    specialSub = 'Passive — auto-triggers';
+    specialEnabled = false;
+  } else if (apostle.specialType === 'charge' && p.charging) {
+    specialSub = 'Charged! Next Strike doubles';
+    specialEnabled = false;
+  }
+
+  return `
+    <div class="action-grid">
+      <button class="action-btn strike" data-act="strike">
+        <span class="icon">⚔</span>
+        <span class="label">Strike</span>
+        <span class="sub">${apostle.strikeDamage} dmg ${p.charging ? '(×2!)' : ''}</span>
+      </button>
+      <button class="action-btn pray" data-act="pray">
+        <span class="icon">✚</span>
+        <span class="label">Pray</span>
+        <span class="sub">Heal ${apostle.prayHeal}</span>
+      </button>
+      <button class="action-btn defend" data-act="defend">
+        <span class="icon">🛡</span>
+        <span class="label">Defend</span>
+        <span class="sub">Halve next hit</span>
+      </button>
+      <button class="action-btn special" data-act="special" ${specialEnabled ? '' : 'disabled'}>
+        <span class="icon">✦</span>
+        <span class="label">${specialLabel}</span>
+        <span class="sub">${specialSub || apostle.specialDesc.split('.')[0]}</span>
+      </button>
+    </div>
+  `;
+}
+
+function renderQuestion() {
+  const q = state.currentQuestion;
+  const isStealing = state.stealing;
+  const activeIdx = isStealing ? state.stealerIdx : state.currentTurn;
+  const activePlayer = state.players[activeIdx];
+  const originalPlayer = state.players[state.currentTurn];
+
+  // Determine the question sub-state. This is the heart of the steal info-leak fix:
+  // once the original player commits, options DISAPPEAR. The stealer must answer
+  // verbally; the host taps a Correct/Wrong verdict button. The correct option is
+  // revealed only at the end, after the steal opportunity has been resolved.
+  let sub;
+  if (!state.questionRevealed) sub = 'awaiting-reveal';
+  else if (isStealing && !state.answerResult) sub = 'stealing-await-verdict';
+  else if (isStealing) sub = 'resolved';
+  else if (!state.answerResult) sub = 'awaiting-answer';
+  else if (state.answerResult === 'wrong' && !state.stealResolved) sub = 'answered-wrong';
+  else sub = 'resolved';
+
+  // Header label
+  let actionLabel = '';
+  if (isStealing) {
+    actionLabel = 'STEAL ATTEMPT';
+  } else {
+    const labels = {
+      strike: 'Strike',
+      pray: 'Pray',
+      defend: 'Defend',
+      'special-aoe': findApostle(originalPlayer.apostleId).specialName,
+      'special-skip': findApostle(originalPlayer.apostleId).specialName
+    };
+    actionLabel = labels[state.pendingAction] || '';
+  }
+
+  // Build the body based on sub-state
+  let bodyHtml = '';
+
+  if (sub === 'awaiting-reveal') {
+    // Question text only — teacher reads aloud, then taps Reveal
+    bodyHtml = `
+      ${originalPlayer.removeWrongActive ? `<div class="instructions" style="color:var(--leather);">★ Patmos Vision active — one wrong option will be removed when choices are revealed</div>` : ''}
+      <div class="reveal-cta">
+        <div class="instructions">Read the question aloud. Tap when ready.</div>
+        <button class="btn-primary" id="reveal-btn">Reveal Answer Choices</button>
+      </div>
+    `;
+  }
+
+  else if (sub === 'awaiting-answer') {
+    // Options visible (original player picks). Damascus retry also lands here
+    // with the previously-tapped option locked out via state.removedOption.
+    const damascusHint = (state.removedOption >= 0 && !originalPlayer.removeWrongActive) ? `
+      <div class="instructions" style="color:var(--seal-red);">★ Damascus Light — pick again from the remaining options</div>
+    ` : '';
+    bodyHtml = `
+      ${damascusHint}
+      <div class="answer-grid">
+        ${q.options.map((opt, i) => {
+          const removed = state.removedOption === i;
+          return `<button class="answer-btn ${removed ? 'removed' : ''}" data-answer="${i}" ${removed ? 'disabled' : ''}>
+            <span class="letter">${String.fromCharCode(65 + i)}</span>
+            <span>${escapeHtml(opt)}</span>
+          </button>`;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  else if (sub === 'answered-wrong') {
+    // Original player committed and missed. HIDE options, show steal panel.
+    // The stealer must not see the choices — they answer verbally.
+    const stealers = state.players.map((p, i) => {
+      if (i === state.currentTurn) return null;
+      if (!p.alive) return null;
+      return `<button class="steal-btn" data-steal="${i}">${escapeHtml(p.name)} stole it</button>`;
+    }).filter(Boolean).join('');
+    bodyHtml = `
+      <div class="verdict verdict-wrong">
+        <span class="verdict-icon">✗</span>
+        <span class="verdict-text">${escapeHtml(originalPlayer.name)} missed.</span>
+      </div>
+      <div class="steal-panel">
+        <div class="steal-title">⚡ Open for Steal! ⚡</div>
+        <div class="steal-sub">Anyone else know it? Tap their name to let them try.</div>
+        <div class="steal-grid">
+          ${stealers}
+          <button class="steal-btn skip" data-steal="skip">No one knew it — move on</button>
+        </div>
+      </div>
+    `;
+  }
+
+  else if (sub === 'stealing-await-verdict') {
+    // Stealer is answering verbally. NO options shown — they didn't get to see
+    // them when the original player was answering. Host taps Correct or Wrong.
+    bodyHtml = `
+      <div class="steal-prompt">
+        <div class="steal-prompt-icon">⚡</div>
+        <div class="steal-prompt-name">${escapeHtml(activePlayer.name)} is stealing</div>
+        <div class="steal-prompt-instructions">Let them answer aloud — no peeking at the choices. Tap below.</div>
+        <div class="steal-verdict-grid">
+          <button class="verdict-btn correct" data-verdict="correct">
+            <span class="icon">✓</span>
+            <span class="label">Correct</span>
+          </button>
+          <button class="verdict-btn wrong" data-verdict="wrong">
+            <span class="icon">✗</span>
+            <span class="label">Wrong</span>
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  else if (sub === 'resolved') {
+    // Show the correct answer text and explanation, then Continue.
+    const correct = state.answerResult === 'correct';
+    let resultLine = '';
+    if (isStealing) {
+      resultLine = correct
+        ? `${escapeHtml(activePlayer.name)} stole it!`
+        : `${escapeHtml(activePlayer.name)}'s steal failed.`;
+    } else if (correct) {
+      resultLine = `${escapeHtml(originalPlayer.name)} got it right.`;
+    } else {
+      resultLine = `${escapeHtml(originalPlayer.name)} missed and no one stole.`;
+    }
+
+    bodyHtml = `
+      <div class="verdict verdict-${correct ? 'correct' : 'wrong'}">
+        <span class="verdict-icon">${correct ? '✓' : '✗'}</span>
+        <span class="verdict-text">${resultLine}</span>
+      </div>
+      <div class="answer-reveal">
+        <div class="answer-reveal-label">The answer was</div>
+        <div class="answer-reveal-text">${escapeHtml(q.options[q.correct])}</div>
+      </div>
+      <div class="explain-box">${escapeHtml(q.explain)}</div>
+      <div style="text-align:center; margin-top: 12px;">
+        <button class="btn-primary" id="continue-btn">Continue →</button>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="question-panel">
+      <div class="question-header">
+        <span>${escapeHtml(activePlayer.name)} · ${actionLabel}</span>
+        <span class="question-source">${escapeHtml(q.source)}</span>
+      </div>
+      <div class="question-text">${escapeHtml(q.q)}</div>
+      ${bodyHtml}
+    </div>
+  `;
+}
+
+/* =========================================================
+   VICTORY SCREEN
+   ========================================================= */
+function renderVictory() {
+  const winner = state.players.find(p => p.alive);
+  const winnerApostle = winner ? findApostle(winner.apostleId) : null;
+
+  // Quote selection — pick a fitting NT quote for the winning apostle
+  const quotes = {
+    paul: { text: "I have fought the good fight, I have finished the race, I have kept the faith.", ref: "2 Timothy 4:7" },
+    peter: { text: "You are the Christ, the Son of the living God.", ref: "Matthew 16:16" },
+    barnabas: { text: "He was a good man, full of the Holy Spirit and of faith.", ref: "Acts 11:24" },
+    john: { text: "Beloved, let us love one another, for love is from God.", ref: "1 John 4:7" },
+    silas: { text: "About midnight Paul and Silas were praying and singing hymns to God.", ref: "Acts 16:25" },
+    apollos: { text: "He was an eloquent man, competent in the Scriptures.", ref: "Acts 18:24" }
+  };
+  const quote = winnerApostle ? quotes[winnerApostle.id] : null;
+
+  // Standings — sorted by HP remaining (winner first), fallen by order
+  const standings = [...state.players]
+    .map((p, i) => ({ ...p, origIdx: i, apostle: findApostle(p.apostleId) }))
+    .sort((a, b) => {
+      if (a.alive && !b.alive) return -1;
+      if (!a.alive && b.alive) return 1;
+      return b.hp - a.hp;
+    });
+
+  return `
+  <div class="panel victory-screen stagger">
+    <div class="tagline">Victory</div>
+    <h1>${winner ? escapeHtml(winner.name) + ' Stands' : 'No one stands'}</h1>
+    ${winner ? `
+      <div class="winner-name">${escapeHtml(winner.name)}</div>
+      <div class="winner-apostle">${winnerApostle.name} · ${winnerApostle.role}</div>
+    ` : ''}
+
+    ${quote ? `
+      <div class="victory-quote">${escapeHtml(quote.text)}</div>
+      <div class="victory-ref">${escapeHtml(quote.ref)}</div>
+    ` : ''}
+
+    <div class="divider"></div>
+
+    <div class="standings">
+      ${standings.map((p, idx) => `
+        <div class="standing-row">
+          <span class="position">${idx === 0 ? '✦' : (idx + 1)}</span>
+          <span class="standing-name">${escapeHtml(p.name)} <em style="color:var(--ink-soft);font-size:0.85em;">(${p.apostle.name})</em></span>
+          <span class="standing-hp">${p.alive ? Math.max(0, p.hp) + ' HP' : 'Fallen'}</span>
+        </div>
+      `).join('')}
+    </div>
+
+    <div class="victory-actions">
+      <button class="btn-secondary" id="play-again">Play Again (same lineup)</button>
+      <button class="btn-primary" id="main-menu">New Game</button>
+    </div>
+  </div>
+  `;
+}
+
+/* =========================================================
+   HANDLERS
+   ========================================================= */
+function attachHandlers() {
+  // Audio toggle (always present)
+  const audioBtn = document.getElementById("audio-toggle");
+  if (audioBtn) audioBtn.onclick = toggleAudio;
+
+  // TITLE
+  const beginBtn = document.getElementById("begin-btn");
+  if (beginBtn) beginBtn.onclick = () => {
+    state.phase = "setup";
+    if (!state.players.length) {
+      for (let i = 0; i < state.playerCount; i++) state.players.push({ name: "" });
+    }
+    render();
+  };
+
+  // SETUP
+  document.querySelectorAll('[data-count]').forEach(b => {
+    b.onclick = () => {
+      const newCount = parseInt(b.dataset.count, 10);
+      // Persist any current name inputs
+      state.players.forEach((p, i) => {
+        const input = document.getElementById(`name-${i}`);
+        if (input) p.name = input.value;
+      });
+      state.playerCount = newCount;
+      // Adjust players array length
+      while (state.players.length < newCount) state.players.push({ name: "" });
+      state.players = state.players.slice(0, newCount);
+      render();
+    };
+  });
+  const backBtn = document.getElementById("back-btn");
+  if (backBtn) backBtn.onclick = () => { state.phase = "title"; render(); };
+  const continueBtn = document.getElementById("setup-continue");
+  if (continueBtn) continueBtn.onclick = () => {
+    // gather names
+    state.players.forEach((p, i) => {
+      const input = document.getElementById(`name-${i}`);
+      if (input) p.name = (input.value || `Contender ${i+1}`).trim() || `Contender ${i+1}`;
+    });
+    state.selectIdx = 0;
+    state.phase = "select";
+    render();
+  };
+
+  // CHARACTER SELECT
+  document.querySelectorAll('.char-card').forEach(card => {
+    if (card.classList.contains('taken')) return;
+    card.onclick = () => {
+      const apostleId = card.dataset.apostle;
+      state.players[state.selectIdx].apostleId = apostleId;
+      render();
+    };
+  });
+  const selectConfirm = document.getElementById("select-confirm");
+  if (selectConfirm) selectConfirm.onclick = () => {
+    if (!state.players[state.selectIdx].apostleId) return;
+    if (state.selectIdx < state.playerCount - 1) {
+      state.selectIdx++;
+      render();
+    } else {
+      startBattle();
+    }
+  };
+  const selectBack = document.getElementById("select-back");
+  if (selectBack) selectBack.onclick = () => {
+    if (state.selectIdx > 0) {
+      state.selectIdx--;
+      render();
+    }
+  };
+
+  // BATTLE — action buttons
+  document.querySelectorAll('[data-act]').forEach(b => {
+    b.onclick = () => handleAction(b.dataset.act);
+  });
+  // Cancel pending action
+  const cancelBtn = document.getElementById("cancel-action");
+  if (cancelBtn) cancelBtn.onclick = () => {
+    state.pendingAction = null;
+    state.pendingTarget = null;
+    render();
+  };
+  // Target selection (clicking targetable hp rows)
+  document.querySelectorAll('[data-target="1"]').forEach(r => {
+    r.onclick = () => handleTargetSelect(parseInt(r.dataset.player, 10));
+  });
+  // Reveal answer choices
+  const revealBtn = document.getElementById("reveal-btn");
+  if (revealBtn) revealBtn.onclick = () => {
+    state.questionRevealed = true;
+    // If the current answerer has Patmos Vision active, remove a wrong option
+    const activeIdx = state.stealing ? state.stealerIdx : state.currentTurn;
+    const activeP = state.players[activeIdx];
+    if (activeP.removeWrongActive && state.removedOption < 0) {
+      // pick a wrong option index that is not the correct one
+      const q = state.currentQuestion;
+      const wrongIndices = q.options.map((_, i) => i).filter(i => i !== q.correct);
+      state.removedOption = wrongIndices[Math.floor(Math.random() * wrongIndices.length)];
+      activeP.removeWrongActive = false;  // consume
+    }
+    render();
+  };
+  // Answer choice buttons
+  document.querySelectorAll('[data-answer]').forEach(b => {
+    b.onclick = () => handleAnswer(parseInt(b.dataset.answer, 10));
+  });
+  // Continue after answer
+  const continueQ = document.getElementById("continue-btn");
+  if (continueQ) continueQ.onclick = resolveTurn;
+  // Steal buttons (pick a stealer name OR "no one knew it")
+  document.querySelectorAll('[data-steal]').forEach(b => {
+    b.onclick = () => {
+      const v = b.dataset.steal;
+      if (v === "skip") {
+        // Don't go straight to resolveTurn — re-render so the resolved state can
+        // show "The answer was: X" for everyone to learn from, then Continue.
+        state.stealResolved = true;
+        render();
+      } else {
+        beginSteal(parseInt(v, 10));
+      }
+    };
+  });
+  // Steal verdict buttons (teacher taps after stealer answers verbally)
+  document.querySelectorAll('[data-verdict]').forEach(b => {
+    b.onclick = () => handleStealVerdict(b.dataset.verdict);
+  });
+
+  // VICTORY
+  const playAgain = document.getElementById("play-again");
+  if (playAgain) playAgain.onclick = () => {
+    // Reset HP/status but keep players & apostle selections
+    state.players.forEach(p => {
+      const a = findApostle(p.apostleId);
+      p.hp = a.maxHP;
+      p.maxHp = a.maxHP;
+      p.alive = true;
+      p.defending = false;
+      p.charging = false;
+      p.skippingTurn = false;
+      p.specialUsed = false;
+      p.removeWrongActive = false;
+    });
+    state.currentTurn = 0;
+    state.pendingAction = null;
+    state.pendingTarget = null;
+    state.currentQuestion = null;
+    state.questionRevealed = false;
+    state.answerResult = null;
+    state.stealing = false;
+    state.stealerIdx = null;
+    state.stealResolved = false;
+    state.usedQuestions.clear();
+    state.log = [];
+    state.removedOption = -1;
+    state.phase = "battle";
+    log("A new contest begins.");
+    render();
+  };
+  const mainMenu = document.getElementById("main-menu");
+  if (mainMenu) mainMenu.onclick = () => {
+    // Full reset
+    state.phase = "title";
+    state.players = [];
+    state.selectIdx = 0;
+    state.currentTurn = 0;
+    state.pendingAction = null;
+    state.pendingTarget = null;
+    state.currentQuestion = null;
+    state.questionRevealed = false;
+    state.answerResult = null;
+    state.stealing = false;
+    state.stealerIdx = null;
+    state.stealResolved = false;
+    state.usedQuestions.clear();
+    state.log = [];
+    state.removedOption = -1;
+    render();
+  };
+}
+
+/* =========================================================
+   BATTLE LOGIC
+   ========================================================= */
+function startBattle() {
+  state.players.forEach(p => {
+    const a = findApostle(p.apostleId);
+    p.hp = a.maxHP;
+    p.maxHp = a.maxHP;
+    p.alive = true;
+    p.defending = false;
+    p.charging = false;
+    p.skippingTurn = false;
+    p.specialUsed = false;
+    p.removeWrongActive = false;
+  });
+  state.currentTurn = 0;
+  state.pendingAction = null;
+  state.pendingTarget = null;
+  state.currentQuestion = null;
+  state.questionRevealed = false;
+  state.answerResult = null;
+  state.stealing = false;
+  state.stealerIdx = null;
+  state.stealResolved = false;
+  state.usedQuestions.clear();
+  state.log = [];
+  state.removedOption = -1;
+  log("The arena opens. Three apostles enter.");
+  state.phase = "battle";
+  render();
+  playTransitionSfx();
+}
+
+function handleAction(act) {
+  const p = state.players[state.currentTurn];
+  const apostle = findApostle(p.apostleId);
+
+  if (act === "strike") {
+    state.pendingAction = "strike";
+    state.pendingTarget = null;
+    render();
+    return;
+  }
+
+  if (act === "pray") {
+    state.pendingAction = "pray";
+    drawAndShowQuestion();
+    return;
+  }
+
+  if (act === "defend") {
+    state.pendingAction = "defend";
+    drawAndShowQuestion();
+    return;
+  }
+
+  if (act === "special") {
+    handleSpecial(apostle, p);
+    return;
+  }
+}
+
+function handleSpecial(apostle, p) {
+  if (p.specialUsed) return;
+
+  // Barnabas: instant self-heal, no question
+  if (apostle.specialType === "self-heal-big") {
+    p.specialUsed = true;
+    const before = p.hp;
+    p.hp = clamp(p.hp + 40, 0, p.maxHp);
+    const healed = p.hp - before;
+    showFloatNum(state.currentTurn, healed, "heal");
+    flashHpRow(state.currentTurn, "heal-glow");
+    log(`${p.name} used Son of Encouragement and healed ${healed} HP.`);
+    playHealSfx();
+    nextTurn();
+    return;
+  }
+
+  // Peter: charge mode (skip turn, next strike doubles)
+  if (apostle.specialType === "charge") {
+    p.specialUsed = true;
+    p.charging = true;
+    log(`${p.name} is charging Pentecost Sermon — next strike will hit for double.`);
+    playChargeSfx();
+    nextTurn();
+    return;
+  }
+
+  // John: arm Patmos Vision — next question reveals with one wrong option removed
+  if (apostle.specialType === "remove-wrong") {
+    p.specialUsed = true;
+    p.removeWrongActive = true;
+    log(`${p.name} called on Patmos Vision. A wrong option will be removed next question.`);
+    playSpecialSfx();
+    // Now they still need to pick an action
+    render();
+    return;
+  }
+
+  // Silas: AoE — pick action, then question
+  if (apostle.specialType === "aoe") {
+    state.pendingAction = "special-aoe";
+    drawAndShowQuestion();
+    return;
+  }
+
+  // Apollos: target skip — pick target first
+  if (apostle.specialType === "skip-target") {
+    state.pendingAction = "special-skip";
+    state.pendingTarget = null;
+    log(`${p.name} prepares Cornered Argument. Pick a target.`);
+    render();
+    return;
+  }
+}
+
+function handleTargetSelect(targetIdx) {
+  const p = state.players[targetIdx];
+  if (!p.alive) return;
+  if (targetIdx === state.currentTurn) return;
+  state.pendingTarget = targetIdx;
+  drawAndShowQuestion();
+}
+
+function drawAndShowQuestion() {
+  state.currentQuestion = drawQuestion();
+  state.questionRevealed = false;
+  state.answerResult = null;
+  state.stealing = false;
+  state.stealerIdx = null;
+  state.stealResolved = false;
+  state.removedOption = -1;
+  state.selectedAnswer = null;
+  render();
+}
+
+function handleAnswer(idx) {
+  if (state.answerResult) return;
+  if (state.removedOption === idx) return;
+  const q = state.currentQuestion;
+  state.selectedAnswer = idx;
+  if (idx === q.correct) {
+    state.answerResult = "correct";
+    playCorrectSfx();
+  } else {
+    // Check for Paul's Damascus Light passive retry (active player only — stealers
+    // don't use tap-to-answer, so this path won't fire mid-steal).
+    const activeIdx = state.stealing ? state.stealerIdx : state.currentTurn;
+    const activeP = state.players[activeIdx];
+    const activeApostle = findApostle(activeP.apostleId);
+    if (activeApostle.specialType === "passive-retry" && !activeP.specialUsed) {
+      activeP.specialUsed = true;
+      // Mark this option as "removed" so they can't pick it again
+      state.removedOption = idx;
+      state.selectedAnswer = null;
+      log(`${activeP.name} called on the Damascus Light — taking a second shot.`);
+      playSpecialSfx();
+      render();
+      return;
+    }
+    state.answerResult = "wrong";
+    playWrongSfx();
+  }
+  render();
+}
+
+// Called when the teacher taps Correct/Wrong during a steal attempt. The stealer
+// answers verbally (without seeing the answer options), and the teacher rules on
+// it. This is what closes the steal info-leak: the stealer never sees the
+// multiple-choice options at all.
+function handleStealVerdict(verdict) {
+  if (state.answerResult) return;
+  if (!state.stealing) return;
+  state.answerResult = verdict;
+  if (verdict === 'correct') playCorrectSfx();
+  else playWrongSfx();
+  render();
+}
+
+function beginSteal(stealerIdx) {
+  state.stealing = true;
+  state.stealerIdx = stealerIdx;
+  state.answerResult = null;
+  state.questionRevealed = true;  // they've already seen the question text
+  state.selectedAnswer = null;
+  // The stealer doesn't see the answer options at all (info-leak fix). They
+  // answer verbally and the teacher taps Correct/Wrong on the verdict buttons.
+  log(`${state.players[stealerIdx].name} is stealing!`);
+  render();
+}
+
+function resolveTurn() {
+  // Apply the action's effect now that the question has been answered (and possibly stolen)
+  const q = state.currentQuestion;
+  const originalIdx = state.currentTurn;
+  const original = state.players[originalIdx];
+  const originalApostle = findApostle(original.apostleId);
+
+  // Determine the effective answerer
+  const answererIdx = state.stealing ? state.stealerIdx : originalIdx;
+  const answerer = state.players[answererIdx];
+  const correct = state.answerResult === "correct";
+
+  if (state.stealing && correct) {
+    // Stealer succeeded -> they deal damage to original player
+    const stealDmg = Math.round(findApostle(answerer.apostleId).strikeDamage * 0.8); // slightly less than full
+    applyDamage(originalIdx, stealDmg, answererIdx);
+    log(`${answerer.name} stole the question and struck ${original.name} for ${stealDmg}!`);
+  } else if (!state.stealing && correct) {
+    // Original answered correctly -> execute their pending action
+    if (state.pendingAction === "strike") {
+      let dmg = originalApostle.strikeDamage;
+      if (original.charging) {
+        dmg *= 2;
+        original.charging = false;
+        log(`${original.name}'s Pentecost Sermon erupts!`);
+      }
+      const targetIdx = state.pendingTarget;
+      applyDamage(targetIdx, dmg, originalIdx);
+      log(`${original.name} struck ${state.players[targetIdx].name} for ${dmg}.`);
+    } else if (state.pendingAction === "pray") {
+      const before = original.hp;
+      original.hp = clamp(original.hp + originalApostle.prayHeal, 0, original.maxHp);
+      const healed = original.hp - before;
+      showFloatNum(originalIdx, healed, "heal");
+      animateCombatant(originalIdx, 'is-healing', 900);
+      log(`${original.name} prayed and recovered ${healed} HP.`);
+      playHealSfx();
+    } else if (state.pendingAction === "defend") {
+      original.defending = true;
+      log(`${original.name} braces in defense.`);
+      playDefendSfx();
+    } else if (state.pendingAction === "special-aoe") {
+      // Silas earthquake
+      original.specialUsed = true;
+      log(`${original.name}'s Earthquake at Philippi shakes the arena!`);
+      state.players.forEach((p, i) => {
+        if (i !== originalIdx && p.alive) {
+          applyDamage(i, 18, originalIdx);
+        }
+      });
+      playEarthquakeSfx();
+    } else if (state.pendingAction === "special-skip") {
+      original.specialUsed = true;
+      const target = state.players[state.pendingTarget];
+      target.skippingTurn = true;
+      log(`${original.name} cornered ${target.name} — they'll skip their next turn.`);
+      playSpecialSfx();
+    }
+  } else {
+    // Wrong (and no steal succeeded)
+    if (state.stealing) {
+      log(`${answerer.name}'s steal failed.`);
+    } else {
+      log(`${original.name} missed the question.`);
+    }
+  }
+
+  // Reset question state and advance turn
+  state.currentQuestion = null;
+  state.questionRevealed = false;
+  state.answerResult = null;
+  state.stealing = false;
+  state.stealerIdx = null;
+  state.stealResolved = false;
+  state.pendingAction = null;
+  state.pendingTarget = null;
+  state.selectedAnswer = null;
+  state.removedOption = -1;
+
+  // Check for victory
+  const alive = alivePlayers();
+  if (alive.length <= 1) {
+    state.phase = "victory";
+    if (alive.length === 1) {
+      log(`${alive[0].name} stands alone! Victory!`);
+    } else {
+      log("All have fallen.");
+    }
+    render();
+    playVictorySfx();
+    return;
+  }
+
+  nextTurn();
+}
+
+function applyDamage(targetIdx, rawDmg, sourceIdx) {
+  const target = state.players[targetIdx];
+  let dmg = rawDmg;
+  if (target.defending) {
+    dmg = Math.round(dmg / 2);
+    target.defending = false;
+    log(`${target.name}'s defense halves the blow!`);
+  }
+  target.hp = Math.max(0, target.hp - dmg);
+  // RPG-style: attacker lunges forward, target gets hit
+  if (typeof sourceIdx === 'number' && sourceIdx !== targetIdx) {
+    animateCombatant(sourceIdx, 'attacking', 550);
+  }
+  // Slight delay so the lunge lands before the target shakes
+  setTimeout(() => {
+    showFloatNum(targetIdx, dmg, "damage");
+    animateCombatant(targetIdx, 'is-hit', 550);
+    playDamageSfx();
+  }, 180);
+  if (target.hp <= 0 && target.alive) {
+    target.alive = false;
+    log(`${target.name} the ${findApostle(target.apostleId).name} has fallen!`);
+    // Clear status effects on fallen
+    target.defending = false;
+    target.charging = false;
+    target.skippingTurn = false;
+  }
+}
+
+function nextTurn() {
+  // Advance to next living, non-skipping player
+  let attempts = 0;
+  while (attempts < state.players.length * 2) {
+    state.currentTurn = (state.currentTurn + 1) % state.players.length;
+    const p = state.players[state.currentTurn];
+    if (!p.alive) { attempts++; continue; }
+    if (p.skippingTurn) {
+      p.skippingTurn = false;
+      log(`${p.name} is forced to skip this turn.`);
+      attempts++;
+      continue;
+    }
+    break;
+  }
+  render();
+}
+
+/* =========================================================
+   FLOATING NUMBERS / ANIMATION
+   ========================================================= */
+function showFloatNum(playerIdx, value, kind) {
+  setTimeout(() => {
+    const el = document.querySelector(`.combatant[data-player="${playerIdx}"]`);
+    if (!el) return;
+    const span = document.createElement("span");
+    span.className = `float-num ${kind}`;
+    span.textContent = (kind === "heal" ? "+" : (kind === "damage" ? "-" : "")) + value;
+    el.appendChild(span);
+    setTimeout(() => span.remove(), 1500);
+  }, 40);
+}
+
+// Toggle an animation class on a combatant for the given duration.
+// Used for 'attacking' (lunge), 'is-hit' (red shake), 'is-healing' (green glow).
+function animateCombatant(playerIdx, cls, duration = 600) {
+  setTimeout(() => {
+    const el = document.querySelector(`.combatant[data-player="${playerIdx}"]`);
+    if (!el) return;
+    el.classList.add(cls);
+    setTimeout(() => el.classList.remove(cls), duration);
+  }, 40);
+}
+
+// Kept for backward compatibility with any older call sites — routes to the new selector.
+function flashHpRow(playerIdx, cls) {
+  animateCombatant(playerIdx, cls === 'shake' ? 'is-hit' : cls);
+}
+
+/* =========================================================
+   AUDIO — Web Audio API procedural drone + SFX
+   (Adapted from Saul's Journey)
+   ========================================================= */
+const audio = { ctx: null, masterGain: null, droneNodes: null };
+
+function initAudio() {
+  if (audio.ctx) return;
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    audio.ctx = new Ctx();
+    audio.masterGain = audio.ctx.createGain();
+    audio.masterGain.gain.value = 0;
+    audio.masterGain.connect(audio.ctx.destination);
+  } catch (e) { audio.ctx = null; }
+}
+
+function startDrone() {
+  if (!audio.ctx) return;
+  const ctx = audio.ctx;
+  const now = ctx.currentTime;
+  if (audio.droneNodes) {
+    audio.masterGain.gain.cancelScheduledValues(now);
+    audio.masterGain.gain.setValueAtTime(audio.masterGain.gain.value, now);
+    audio.masterGain.gain.linearRampToValueAtTime(0.30, now + 1.5);
+    return;
+  }
+  const freqs = [98, 146.83, 196];
+  const oscs = [];
+  const oscGains = [];
+  freqs.forEach((f, i) => {
+    const o1 = ctx.createOscillator();
+    const o2 = ctx.createOscillator();
+    o1.type = i === 2 ? 'triangle' : 'sine';
+    o2.type = 'sine';
+    o1.frequency.value = f;
+    o2.frequency.value = f * 1.003;
+    const g = ctx.createGain();
+    g.gain.value = i === 0 ? 0.22 : (i === 1 ? 0.15 : 0.1);
+    o1.connect(g); o2.connect(g);
+    const lfo = ctx.createOscillator();
+    const lfoGain = ctx.createGain();
+    lfo.frequency.value = 0.07 + i * 0.03;
+    lfoGain.gain.value = i === 0 ? 0.05 : 0.03;
+    lfo.connect(lfoGain); lfoGain.connect(g.gain);
+    g.connect(audio.masterGain);
+    o1.start(now); o2.start(now); lfo.start(now);
+    oscs.push(o1, o2, lfo); oscGains.push(g);
+  });
+  audio.droneNodes = { oscs, oscGains };
+  audio.masterGain.gain.cancelScheduledValues(now);
+  audio.masterGain.gain.setValueAtTime(0, now);
+  audio.masterGain.gain.linearRampToValueAtTime(0.30, now + 2.0);
+}
+
+function stopDrone() {
+  if (!audio.ctx) return;
+  const now = audio.ctx.currentTime;
+  audio.masterGain.gain.cancelScheduledValues(now);
+  audio.masterGain.gain.setValueAtTime(audio.masterGain.gain.value, now);
+  audio.masterGain.gain.linearRampToValueAtTime(0, now + 0.8);
+}
+
+function toggleAudio() {
+  initAudio();
+  if (!audio.ctx) return;
+  if (audio.ctx.state === 'suspended') audio.ctx.resume();
+  state.audioOn = !state.audioOn;
+  if (state.audioOn) startDrone();
+  else stopDrone();
+  updateAudioToggle();
+}
+
+function playTone(freq, duration, type = 'sine', vol = 0.15, attack = 0.01, release = 0.2) {
+  if (!audio.ctx) return;
+  if (!state.audioOn) return;
+  const ctx = audio.ctx;
+  const now = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  const g = ctx.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  g.gain.value = 0;
+  g.gain.linearRampToValueAtTime(vol, now + attack);
+  g.gain.linearRampToValueAtTime(0, now + attack + duration + release);
+  osc.connect(g);
+  // Route through masterGain so SFX respond to the same volume envelope as the drone
+  g.connect(audio.masterGain || audio.ctx.destination);
+  osc.start(now);
+  osc.stop(now + attack + duration + release + 0.05);
+}
+
+function playCorrectSfx() {
+  playTone(523.25, 0.10, 'sine', 0.12, 0.005, 0.18);
+  setTimeout(() => playTone(659.25, 0.14, 'sine', 0.12, 0.005, 0.22), 80);
+}
+function playWrongSfx() {
+  playTone(349.23, 0.14, 'triangle', 0.10, 0.005, 0.20);
+  setTimeout(() => playTone(261.63, 0.22, 'triangle', 0.10, 0.005, 0.30), 100);
+}
+function playDamageSfx() {
+  playTone(180, 0.05, 'sawtooth', 0.14, 0.002, 0.10);
+  setTimeout(() => playTone(140, 0.08, 'sawtooth', 0.10, 0.002, 0.14), 35);
+}
+function playHealSfx() {
+  playTone(659.25, 0.10, 'triangle', 0.10, 0.005, 0.20);
+  setTimeout(() => playTone(880, 0.14, 'triangle', 0.10, 0.005, 0.30), 70);
+}
+function playDefendSfx() {
+  playTone(220, 0.18, 'sine', 0.14, 0.005, 0.25);
+}
+function playSpecialSfx() {
+  playTone(440, 0.06, 'sine', 0.12, 0.005, 0.15);
+  setTimeout(() => playTone(659.25, 0.08, 'sine', 0.12, 0.005, 0.18), 60);
+  setTimeout(() => playTone(880, 0.14, 'sine', 0.12, 0.005, 0.25), 130);
+}
+function playChargeSfx() {
+  playTone(130.81, 0.20, 'sawtooth', 0.10, 0.005, 0.35);
+  setTimeout(() => playTone(196, 0.28, 'sawtooth', 0.10, 0.005, 0.45), 100);
+}
+function playEarthquakeSfx() {
+  for (let i = 0; i < 5; i++) {
+    setTimeout(() => playTone(70 + i*15, 0.12, 'sawtooth', 0.16, 0.002, 0.18), i * 70);
+  }
+}
+function playTransitionSfx() {
+  playTone(587.33, 0.18, 'triangle', 0.12, 0.005, 0.4);
+  setTimeout(() => playTone(783.99, 0.18, 'triangle', 0.12, 0.005, 0.4), 140);
+  setTimeout(() => playTone(987.77, 0.35, 'triangle', 0.11, 0.005, 0.6), 280);
+}
+function playVictorySfx() {
+  playTone(523.25, 0.18, 'triangle', 0.14, 0.005, 0.3);
+  setTimeout(() => playTone(659.25, 0.18, 'triangle', 0.14, 0.005, 0.3), 140);
+  setTimeout(() => playTone(783.99, 0.18, 'triangle', 0.14, 0.005, 0.3), 280);
+  setTimeout(() => playTone(1046.5, 0.4, 'triangle', 0.14, 0.005, 0.5), 420);
+}
+
+/* =========================================================
+   BOOT
+   ========================================================= */
+render();
+</script>
+</body>
+</html>
