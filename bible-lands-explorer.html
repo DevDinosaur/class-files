@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bible Lands Explorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --parchment:#F4E8C1; --parchment-dk:#E8D59A;
+  --ink:#2C1A0E; --ink-mid:#5C3A1E;
+  --gold:#C9973D; --gold-bright:#F0C040;
+  --sea-blue:#2A6B9E; --sea-light:#A8CCE8;
+  --land-green:#7A9E60; --land-shadow:#5A7A45;
+  --correct:#2E8B57; --incorrect:#9E2A2A;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:'EB Garamond',Georgia,serif;color:var(--ink);background:var(--parchment);
+  background-image:
+    radial-gradient(circle at 20% 15%, rgba(201,151,61,.10), transparent 45%),
+    radial-gradient(circle at 85% 80%, rgba(92,58,30,.10), transparent 50%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+  overflow:hidden;
+}
+button{font-family:'Nunito',sans-serif;cursor:pointer}
+:focus-visible{outline:3px solid var(--gold-bright);outline-offset:3px;border-radius:6px}
+
+.screen{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+.screen.active{display:flex}
+
+.btn{
+  font-family:'Cinzel',serif;font-weight:600;letter-spacing:.04em;
+  background:linear-gradient(180deg,var(--parchment) 0%,var(--parchment-dk) 100%);
+  color:var(--ink);border:2px solid var(--ink-mid);padding:16px 40px;font-size:1.35rem;border-radius:10px;
+  box-shadow:0 4px 0 var(--ink-mid),0 8px 18px rgba(44,26,14,.35);
+  transition:transform .15s ease-out,box-shadow .15s ease-out,filter .15s ease-out;
+}
+.btn:hover{transform:translateY(-2px);filter:brightness(1.04);box-shadow:0 6px 0 var(--ink-mid),0 12px 22px rgba(44,26,14,.4)}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink-mid),0 4px 10px rgba(44,26,14,.3)}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:0 4px 0 var(--ink-mid)}
+.btn.small{font-size:1.05rem;padding:11px 26px}
+.rule{display:block;width:min(560px,80vw);height:0;margin:14px auto 0;border-top:3px solid var(--gold);border-bottom:1px solid var(--ink-mid);padding-bottom:5px}
+
+/* WELCOME */
+#welcome .title{font-family:'Cinzel',serif;font-weight:700;color:var(--ink);
+  font-size:clamp(2.4rem,7vw,5rem);letter-spacing:.06em;text-align:center;line-height:1.05;
+  text-shadow:0 2px 0 var(--parchment-dk),0 4px 14px rgba(44,26,14,.25)}
+#welcome .subtitle{font-style:italic;font-size:clamp(1.1rem,2.6vw,1.6rem);color:var(--ink-mid);margin-top:6px}
+.stagger>*{opacity:0;animation:fadeUp .7s ease-out forwards}
+.stagger>*:nth-child(1){animation-delay:.05s}.stagger>*:nth-child(2){animation-delay:.30s}
+.stagger>*:nth-child(3){animation-delay:.55s}.stagger>*:nth-child(4){animation-delay:.85s}.stagger>*:nth-child(5){animation-delay:1.1s}
+@keyframes fadeUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+
+/* SETUP */
+#setup{justify-content:flex-start;overflow-y:auto;padding-top:34px}
+.setup-h{font-family:'Cinzel',serif;font-weight:700;font-size:clamp(1.8rem,4.5vw,3rem);letter-spacing:.04em}
+.count-row{display:flex;gap:16px;margin:8px 0 4px}
+.count-btn{font-family:'Cinzel',serif;font-weight:700;width:74px;height:74px;font-size:1.9rem;border-radius:14px;
+  background:var(--parchment);border:2px solid var(--ink-mid);color:var(--ink);box-shadow:0 3px 0 var(--ink-mid)}
+.count-btn.active{background:var(--gold-bright);border-color:var(--ink);transform:scale(1.06);box-shadow:0 4px 0 var(--ink-mid)}
+.names{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;max-width:640px;margin:10px 0}
+.name-field{display:none;flex-direction:column;gap:3px}
+.name-field.show{display:flex}
+.name-field label{font-family:'Nunito';font-weight:700;font-size:.8rem;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-mid)}
+.name-field input{font-family:'Cinzel',serif;font-size:1.1rem;padding:9px 12px;width:230px;border-radius:8px;
+  background:#fffdf3;border:1.5px solid var(--ink-mid);border-left-width:10px;color:var(--ink)}
+.diff-h{font-family:'Cinzel',serif;font-weight:600;font-size:1.4rem;margin-top:14px}
+.diff-row{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin:10px 0 6px}
+.diff-tile{width:200px;padding:18px 14px;border-radius:14px;background:var(--parchment);
+  border:2px solid var(--ink-mid);text-align:center;transition:transform .15s,border-color .15s,box-shadow .15s;box-shadow:0 3px 0 var(--ink-mid)}
+.diff-tile .ic{font-size:2.2rem;line-height:1}
+.diff-tile .lab{font-family:'Cinzel',serif;font-weight:700;font-size:1.3rem;margin-top:6px}
+.diff-tile .sub{font-family:'Nunito';font-size:.8rem;color:var(--ink-mid);margin-top:2px}
+.diff-tile.active{border-color:var(--gold);border-width:3px;transform:scale(1.06);box-shadow:0 5px 0 var(--gold)}
+
+/* GAME */
+#game{justify-content:flex-start;padding:0}
+.topbar{width:100%;display:flex;align-items:stretch;gap:8px;padding:10px 16px;
+  background:linear-gradient(180deg,var(--parchment-dk),var(--parchment));border-bottom:3px double var(--ink-mid)}
+.team-tab{flex:1;border-radius:10px 10px 0 0;padding:8px 12px;background:rgba(255,255,255,.35);
+  border:2px solid var(--ink-mid);border-bottom:none;opacity:.6;transition:all .3s ease-out;min-width:0}
+.team-tab .tn{font-family:'Cinzel',serif;font-weight:700;font-size:1rem;color:var(--tc);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.team-tab .ts{font-family:'Nunito';font-weight:800;font-size:1.5rem;color:var(--ink)}
+.team-tab.active{opacity:1;transform:scale(1.05) translateY(2px);background:#fffdf3;
+  border-color:var(--tc);box-shadow:0 0 0 2px var(--tc),0 0 22px -2px var(--tc)}
+.team-tab.done::after{content:" ✓";color:var(--correct);font-family:'Nunito';font-weight:800}
+.qcount{font-family:'Cinzel',serif;font-weight:600;font-size:1rem;align-self:center;
+  padding:6px 16px;white-space:nowrap;border-left:2px solid var(--ink-mid);margin-left:4px}
+
+.stage{position:relative;flex:1;width:100%;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.timer-wrap{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:min(860px,92%);height:14px;
+  background:rgba(44,26,14,.18);border:1.5px solid var(--ink-mid);border-radius:8px;overflow:hidden;display:none;z-index:6}
+.timer-fill{height:100%;width:100%;background:linear-gradient(90deg,var(--gold-bright),var(--incorrect));transition:width .1s linear}
+.map-frame{width:min(96vw,1060px);max-height:calc(100vh - 220px);border:3px double var(--ink-mid);border-radius:12px;
+  background:var(--sea-blue);box-shadow:0 10px 40px rgba(44,26,14,.4);overflow:hidden}
+svg#map{display:block;width:100%;height:auto}
+
+/* city nodes (always shown, always labeled) */
+.city{cursor:pointer}
+.city .hit{fill:#fff;fill-opacity:0}
+.city .dot{fill:var(--ink-mid);stroke:#fff8e6;stroke-width:2;transform-box:fill-box;transform-origin:center;animation:dotpulse 2.4s ease-in-out infinite}
+.city:hover .dot{fill:var(--gold)}
+.city:hover .ring{opacity:1}
+.city .ring{fill:none;stroke:var(--gold-bright);stroke-width:2.5;opacity:0;transition:opacity .15s}
+.city .clabel{font-family:'Cinzel',serif;font-weight:600;font-size:15px;fill:var(--ink);paint-order:stroke;
+  stroke:var(--parchment);stroke-width:3.5px;stroke-linejoin:round;pointer-events:none}
+@keyframes dotpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.22)}}
+
+/* Philip corner */
+.philip-corner{position:absolute;left:14px;bottom:10px;z-index:8;display:flex;align-items:flex-end;gap:10px;max-width:60%}
+.philip-mount svg{width:116px;height:auto;filter:drop-shadow(0 6px 10px rgba(44,26,14,.4))}
+.turn-tag{font-family:'Cinzel',serif;font-weight:700;font-size:1.15rem;color:var(--tc);margin-bottom:6px;text-shadow:0 1px 0 var(--parchment);min-height:1.2em}
+.bubble-wrap{display:flex;flex-direction:column;align-items:flex-start}
+.bubble{position:relative;background:var(--parchment);border:2px solid var(--ink-mid);border-radius:16px;
+  padding:13px 17px;font-family:'EB Garamond',serif;font-size:1.18rem;line-height:1.32;color:var(--ink);
+  max-width:430px;box-shadow:0 5px 16px rgba(44,26,14,.3)}
+.bubble.scholar{font-size:1.05rem;max-width:400px}
+.bubble::after{content:"";position:absolute;left:-15px;bottom:18px;border-width:9px 16px 9px 0;border-style:solid;border-color:transparent var(--ink-mid) transparent transparent}
+.bubble::before{content:"";position:absolute;left:-11px;bottom:18px;z-index:1;border-width:8px 14px 8px 0;border-style:solid;border-color:transparent var(--parchment) transparent transparent}
+.philip-slide{animation:slideUp .5s cubic-bezier(.2,.9,.3,1.2)}
+@keyframes slideUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
+.hint-btn{margin-top:8px}
+
+/* Philip expressions */
+.philip .mouth,.philip .eyes-shape{display:none}
+.philip[data-exp="neutral"] .m-neutral,.philip[data-exp="neutral"] .e-normal{display:block}
+.philip[data-exp="happy"] .m-happy,.philip[data-exp="happy"] .e-normal,.philip[data-exp="happy"] .brow-up{display:block}
+.philip[data-exp="encouraging"] .m-soft,.philip[data-exp="encouraging"] .e-normal{display:block}
+.philip[data-exp="excited"] .m-open,.philip[data-exp="excited"] .e-wide{display:block}
+.philip[data-exp="encouraging"] .pip-head{transform:rotate(-7deg);transform-origin:60px 56px}
+.philip .pip-head{transition:transform .3s}
+
+/* interstitial */
+.interstitial{position:absolute;inset:0;display:none;align-items:center;justify-content:center;z-index:20;
+  background:radial-gradient(circle at center,rgba(244,232,193,.97),rgba(232,213,154,.99))}
+.interstitial.show{display:flex;animation:interFade 1.5s ease-out}
+.interstitial .it-txt{font-family:'Cinzel',serif;font-weight:700;font-size:clamp(2rem,6vw,4rem);color:var(--tc);
+  text-shadow:0 3px 0 var(--parchment-dk),0 6px 20px rgba(44,26,14,.3);text-align:center}
+@keyframes interFade{0%{opacity:0;transform:scale(.85)}18%{opacity:1;transform:scale(1)}82%{opacity:1}100%{opacity:0;transform:scale(1.04)}}
+
+/* floating +N */
+.float-score{position:fixed;font-family:'Nunito';font-weight:800;font-size:2rem;pointer-events:none;z-index:40;
+  animation:floatUp 1.3s ease-out forwards;text-shadow:0 2px 4px rgba(44,26,14,.3)}
+@keyframes floatUp{0%{opacity:0;transform:translateY(0) scale(.6)}20%{opacity:1;transform:translateY(-10px) scale(1.15)}100%{opacity:0;transform:translateY(-90px) scale(1)}}
+
+/* fx */
+.starburst{animation:burst .8s ease-out forwards;transform-box:fill-box;transform-origin:center}
+@keyframes burst{0%{transform:scale(.1);opacity:0}25%{opacity:1}60%{transform:scale(1.15);opacity:.95}100%{transform:scale(1.5);opacity:0}}
+.redring{fill:none;stroke:var(--incorrect);stroke-width:5;transform-box:fill-box;transform-origin:center;animation:redring .9s ease-out forwards}
+@keyframes redring{0%{r:9px;opacity:.9}100%{r:42px;opacity:0;stroke-width:1}}
+.goldpulse{fill:var(--gold-bright);transform-box:fill-box;transform-origin:center;animation:goldpulse 1.1s ease-out 3}
+@keyframes goldpulse{0%{r:7px;opacity:.7}100%{r:38px;opacity:0}}
+.dotwin{fill:var(--correct)!important;animation:dotwin .6s ease-out!important}
+@keyframes dotwin{0%{transform:scale(1)}45%{transform:scale(1.9)}100%{transform:scale(1.35)}}
+.pin{animation:pindrop .7s cubic-bezier(.2,1.4,.4,1) forwards;transform-box:fill-box;transform-origin:bottom}
+@keyframes pindrop{0%{transform:translateY(-60px) scale(.4);opacity:0}55%{opacity:1}70%{transform:translateY(0) scale(1.08)}100%{transform:translateY(0) scale(1)}}
+
+/* END */
+#end{justify-content:flex-start;overflow-y:auto;padding-top:30px}
+#end>*{position:relative;z-index:10}
+.end-cards{display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;max-width:620px;margin:18px 0}
+.score-card{width:100%;display:flex;align-items:center;justify-content:space-between;gap:14px;
+  background:#fffdf3;border:2.5px solid var(--ink-mid);border-radius:14px;padding:16px 22px;
+  box-shadow:0 4px 0 var(--ink-mid);opacity:0;animation:fadeUp .55s ease-out forwards}
+.score-card .rank{font-family:'Nunito';font-weight:800;font-size:1.3rem;color:var(--ink-mid);width:42px}
+.score-card .nm{font-family:'Cinzel',serif;font-weight:700;font-size:1.5rem;color:var(--tc);flex:1;text-align:left}
+.score-card .pts{font-family:'Nunito';font-weight:800;font-size:1.8rem}
+.score-card.win{background:linear-gradient(180deg,#fff6da,var(--gold-bright));border-color:var(--gold);border-width:3px;transform:scale(1.04);box-shadow:0 6px 0 var(--gold)}
+.score-card.win .ribbon{font-size:1.7rem}
+.end-btns{display:flex;gap:16px;margin-top:10px;flex-wrap:wrap;justify-content:center}
+.confetti{position:fixed;top:-20px;width:11px;height:16px;z-index:1;opacity:.9;animation:fall linear infinite}
+@keyframes fall{0%{transform:translateY(-30px) rotate(0)}100%{transform:translateY(108vh) rotate(620deg)}}
+
+@media(max-width:820px){
+  .philip-mount svg{width:86px}
+  .bubble{font-size:1rem;max-width:280px}
+  .map-frame{max-height:calc(100vh - 190px)}
+}
+</style>
+</head>
+<body>
+
+<!-- WELCOME -->
+<section id="welcome" class="screen active">
+  <div class="stagger" style="display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center">
+    <h1 class="title">BIBLE&nbsp;LANDS<br>EXPLORER</h1>
+    <p class="subtitle">Discover the World of the New Testament</p>
+    <span class="rule"></span>
+    <div style="display:flex;align-items:flex-end;gap:16px;margin-top:10px">
+      <div class="philip-mount" data-exp="excited" style="flex:0 0 auto"></div>
+      <div class="bubble" style="margin-bottom:14px">Welcome, explorers! Ready to travel through Bible lands?</div>
+    </div>
+    <button class="btn" style="margin-top:14px" onclick="goSetup()">Start Game</button>
+  </div>
+</section>
+
+<!-- SETUP -->
+<section id="setup" class="screen">
+  <h2 class="setup-h">How Many Teams?</h2>
+  <span class="rule"></span>
+  <div class="count-row" id="countRow">
+    <button class="count-btn" data-n="2">2</button>
+    <button class="count-btn" data-n="3">3</button>
+    <button class="count-btn" data-n="4">4</button>
+  </div>
+  <div class="names" id="nameFields"></div>
+  <h3 class="diff-h">Choose Your Difficulty</h3>
+  <div class="diff-row" id="diffRow">
+    <div class="diff-tile" data-diff="explorer"><div class="ic">🌟</div><div class="lab">Explorer</div><div class="sub">Ages 4–7 · Simple clues</div></div>
+    <div class="diff-tile active" data-diff="pilgrim"><div class="ic">🗺️</div><div class="lab">Pilgrim</div><div class="sub">Ages 8–10 · A hint to help</div></div>
+    <div class="diff-tile" data-diff="scholar"><div class="ic">📜</div><div class="lab">Scholar</div><div class="sub">Ages 11–13 · Beat the timer</div></div>
+  </div>
+  <div style="display:flex;align-items:flex-end;gap:14px;margin:10px 0 4px">
+    <div class="philip-mount" data-exp="neutral" style="flex:0 0 auto"></div>
+    <div class="bubble" style="margin-bottom:12px">Pick your teams and a difficulty, then we'll set sail!</div>
+  </div>
+  <button class="btn" id="beginBtn" disabled onclick="startGame()">Begin Adventure</button>
+</section>
+
+<!-- GAME -->
+<section id="game" class="screen">
+  <div class="topbar" id="topbar"></div>
+  <div class="stage" id="stage">
+    <div class="timer-wrap" id="timerWrap"><div class="timer-fill" id="timerFill"></div></div>
+    <div class="map-frame" id="mapFrame"></div>
+    <div class="philip-corner" id="philipCorner">
+      <div class="philip-mount" data-exp="neutral"></div>
+      <div class="bubble-wrap">
+        <div class="turn-tag" id="turnTag"></div>
+        <div class="bubble" id="clueBubble"></div>
+        <button class="btn small hint-btn" id="hintBtn" style="display:none" onclick="useHint()">💡 Hint (−5)</button>
+      </div>
+    </div>
+    <div class="interstitial" id="interstitial"><div class="it-txt" id="itTxt"></div></div>
+  </div>
+</section>
+
+<!-- END -->
+<section id="end" class="screen">
+  <h2 class="setup-h">Journey Complete!</h2>
+  <span class="rule"></span>
+  <div style="display:flex;align-items:flex-end;gap:14px;margin-top:14px">
+    <div class="philip-mount" data-exp="excited" style="flex:0 0 auto"></div>
+    <div class="bubble" id="endBubble" style="margin-bottom:14px">Well done, explorers! You've journeyed through Bible lands!</div>
+  </div>
+  <div class="end-cards" id="endCards"></div>
+  <div class="end-btns">
+    <button class="btn small" onclick="playAgain()">Play Again</button>
+    <button class="btn small" onclick="changeSettings()">Change Settings</button>
+  </div>
+</section>
+
+<script>
+/* ---------- PHILIP ---------- */
+function philipSVG(){return `
+<svg class="philip" viewBox="0 0 120 150" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <path d="M86 70 q16 4 14 22 q-2 14 -16 13 q-12 -1 -11 -16 q1 -16 13 -19z" fill="#7A5A33" stroke="#3a2814" stroke-width="2"/>
+  <ellipse cx="88" cy="70" rx="9" ry="5" fill="#8a6a3d" stroke="#3a2814" stroke-width="1.5"/>
+  <line x1="30" y1="30" x2="22" y2="140" stroke="#6b4a26" stroke-width="6" stroke-linecap="round"/>
+  <path d="M30 30 q-12 -2 -10 10" fill="none" stroke="#6b4a26" stroke-width="6" stroke-linecap="round"/>
+  <path d="M40 70 q20 -10 40 0 l8 64 q-28 10 -56 0z" fill="#8a5a2e" stroke="#3a2814" stroke-width="2.5"/>
+  <path d="M58 70 l2 64" stroke="#6b4422" stroke-width="2" opacity=".5"/>
+  <rect x="38" y="98" width="46" height="7" rx="3" fill="#5C3A1E"/>
+  <path d="M44 78 q-12 6 -14 20" fill="none" stroke="#8a5a2e" stroke-width="11" stroke-linecap="round"/>
+  <ellipse cx="50" cy="140" rx="10" ry="5" fill="#c9a06a" stroke="#3a2814" stroke-width="2"/>
+  <ellipse cx="72" cy="140" rx="10" ry="5" fill="#c9a06a" stroke="#3a2814" stroke-width="2"/>
+  <g class="pip-head">
+    <path d="M40 50 q20 -30 40 0 q-20 -10 -40 0z" fill="#b98a4a" stroke="#3a2814" stroke-width="2"/>
+    <circle cx="60" cy="50" r="22" fill="#e9c39a" stroke="#3a2814" stroke-width="2.5"/>
+    <path d="M39 44 q21 -8 42 0" fill="none" stroke="#c97a3a" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="38" cy="51" r="4" fill="#e9c39a" stroke="#3a2814" stroke-width="2"/>
+    <circle cx="82" cy="51" r="4" fill="#e9c39a" stroke="#3a2814" stroke-width="2"/>
+    <path d="M44 60 q16 16 32 0 q-2 12 -16 13 q-14 -1 -16 -13z" fill="#caa06a" opacity=".55"/>
+    <path d="M48 42 q4 -3 8 0" fill="none" stroke="#5a3a1e" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M64 42 q4 -3 8 0" fill="none" stroke="#5a3a1e" stroke-width="2.2" stroke-linecap="round"/>
+    <g class="eyes-shape brow-up">
+      <path d="M48 39 q4 -3 8 0" fill="none" stroke="#5a3a1e" stroke-width="2.2" stroke-linecap="round"/>
+      <path d="M64 39 q4 -3 8 0" fill="none" stroke="#5a3a1e" stroke-width="2.2" stroke-linecap="round"/>
+    </g>
+    <g class="eyes-shape e-normal"><circle cx="52" cy="48" r="3" fill="#2C1A0E"/><circle cx="68" cy="48" r="3" fill="#2C1A0E"/></g>
+    <g class="eyes-shape e-wide"><circle cx="52" cy="48" r="5" fill="#fff"/><circle cx="68" cy="48" r="5" fill="#fff"/><circle cx="52" cy="48" r="3" fill="#2C1A0E"/><circle cx="68" cy="48" r="3" fill="#2C1A0E"/></g>
+    <path class="mouth m-neutral" d="M52 60 q8 6 16 0" fill="none" stroke="#5a2a1e" stroke-width="2.6" stroke-linecap="round"/>
+    <path class="mouth m-soft" d="M53 59 q7 4 14 0" fill="none" stroke="#5a2a1e" stroke-width="2.6" stroke-linecap="round"/>
+    <path class="mouth m-happy" d="M50 58 q10 11 20 0 q-10 4 -20 0z" fill="#7a2a22" stroke="#5a2a1e" stroke-width="2"/>
+    <path class="mouth m-open" d="M54 58 a6 7 0 1 0 12 0 a6 7 0 1 0 -12 0z" fill="#7a2a22" stroke="#5a2a1e" stroke-width="2"/>
+  </g>
+</svg>`;}
+
+/* ---------- QUESTION BANK (19 locations) ---------- */
+const LOCATIONS = [
+ {id:'bethlehem',name:'Bethlehem',x:632,y:580,lab:'left',
+  clues:{explorer:"Jesus was born here in a manger because there was no room at the inn",
+   pilgrim:"Wise men followed a star from the east to bring gifts to baby Jesus in this city",
+   scholar:"The prophet Micah predicted the Messiah would come from this small Judean town — the hometown of King David"}},
+ {id:'jerusalem',name:'Jerusalem',x:628,y:532,lab:'left',
+  clues:{explorer:"Jesus died on a cross and rose from the dead near this big important city",
+   pilgrim:"The Holy Spirit came on 3,000 new believers here on the day of Pentecost",
+   scholar:"Paul was arrested in the Temple courts here after his third missionary journey, beginning his long journey to Rome"}},
+ {id:'jericho',name:'Jericho',x:706,y:522,lab:'right',
+  clues:{explorer:"A short man named Zacchaeus climbed a tree to see Jesus in this city",
+   pilgrim:"Jesus healed a blind beggar named Bartimaeus who called out to him just outside this city",
+   scholar:"This ancient city near the Jordan River was the setting for Jesus meeting a despised tax collector who gave back four times what he had stolen"}},
+ {id:'nazareth',name:'Nazareth',x:642,y:398,lab:'left',
+  clues:{explorer:"Jesus grew up here as a boy with Mary and Joseph",
+   pilgrim:"People in this town got so angry when Jesus preached that they tried to throw him off a cliff",
+   scholar:"When Nathanael heard where Jesus was from, he said 'Can anything good come from there?' — what city was he dismissing?"}},
+ {id:'capernaum',name:'Capernaum',x:708,y:352,lab:'right',
+  clues:{explorer:"Jesus made this fishing town on a big lake his home during his ministry",
+   pilgrim:"Jesus called a tax collector named Matthew away from his booth in this town on the Sea of Galilee",
+   scholar:"Jesus said this city would be 'brought down to Hades' despite seeing more miracles than almost anywhere else"}},
+ {id:'galilee',name:'Sea of Galilee',x:706,y:390,lab:'right',sea:true,
+  clues:{explorer:"Jesus walked on the water and calmed a big storm on this lake",
+   pilgrim:"Jesus called his first four disciples — two sets of brothers who were fishermen — away from their nets on this body of water",
+   scholar:"After the resurrection, Jesus appeared here, told the disciples to cast their net on the right side, and then made breakfast on the shore"}},
+ {id:'jordan',name:'Jordan River',x:690,y:472,lab:'right',sea:true,
+  clues:{explorer:"Jesus was baptized in this river by John the Baptist",
+   pilgrim:"The Spirit descended like a dove and a voice from heaven said 'This is my Son' when Jesus was baptized in this river",
+   scholar:"This river runs from the Sea of Galilee south to the Dead Sea — John the Baptist baptized at a crossing called Bethany-beyond-the-Jordan"}},
+ {id:'samaria',name:'Samaria',x:620,y:462,lab:'left',
+  clues:{explorer:"Jesus talked to a woman at a well and told her he could give her 'living water'",
+   pilgrim:"Jesus went through a region that Jewish people usually avoided and spoke to a woman who had been married five times",
+   scholar:"Philip the evangelist preached through this region between Galilee and Judea after the Jerusalem church was scattered by persecution"}},
+ {id:'caesarea',name:'Caesarea',x:588,y:345,lab:'left',
+  clues:{explorer:"A Roman soldier named Cornelius became a Christian in this big seaside city",
+   pilgrim:"Peter traveled to this coastal city and baptized an entire Roman household — some of the first Gentile Christians",
+   scholar:"Paul was held under house arrest here for two years under Governor Felix before appealing his case to Caesar"}},
+ {id:'damascus',name:'Damascus',x:740,y:238,lab:'right',
+  clues:{explorer:"Saul saw a blinding light and heard Jesus speaking to him on the road to this city — and became a Christian",
+   pilgrim:"Saul was on his way here to arrest Christians when a light from heaven struck him blind and Jesus asked, 'Why are you persecuting me?'",
+   scholar:"Paul spent time in this city after his conversion and later had to escape by being lowered over the wall in a basket to avoid those who wanted to kill him"}},
+ {id:'antioch',name:'Antioch',x:648,y:180,lab:'above',
+  clues:{explorer:"Followers of Jesus were first called 'Christians' in this city",
+   pilgrim:"Paul and Barnabas were sent out from the church in this Syrian city to begin their first missionary journey",
+   scholar:"Paul publicly rebuked the apostle Peter in this city for refusing to eat with Gentile believers when visitors from Jerusalem arrived"}},
+ {id:'cyprus',name:'Cyprus',x:554,y:302,lab:'below',
+  clues:{explorer:"Paul and his friend Barnabas visited this big island early in their travels",
+   pilgrim:"On this Mediterranean island, Paul struck a sorcerer named Elymas blind because he was opposing the gospel",
+   scholar:"Barnabas was originally from this island, and after his split with Paul, he returned here with John Mark to plant churches"}},
+ {id:'ephesus',name:'Ephesus',x:458,y:212,lab:'above',
+  clues:{explorer:"Paul stayed here longer than anywhere else — people here made statues of a goddess and got very angry at him",
+   pilgrim:"A silversmith named Demetrius started a riot in this city because Paul's preaching was hurting idol sales — the crowd chanted for two hours",
+   scholar:"Paul spent about three years in this city, first in the synagogue, then training disciples daily in the Hall of Tyrannus"}},
+ {id:'philippi',name:'Philippi',x:332,y:118,lab:'above',
+  clues:{explorer:"Paul and his friend Silas were thrown in jail here, but an earthquake opened the doors and set them free",
+   pilgrim:"A businesswoman named Lydia who sold purple cloth became one of the very first European Christians in this city",
+   scholar:"This Roman colony in Macedonia was the first city in Europe where Paul planted a church — he later wrote one of his most joyful letters to the church here from prison"}},
+ {id:'thessalonica',name:'Thessalonica',x:300,y:142,lab:'left',
+  clues:{explorer:"Paul preached here but people got angry and chased him out of the city",
+   pilgrim:"The people in a nearby town called Berea were praised for checking the Scriptures every day to verify what Paul was teaching",
+   scholar:"Paul wrote two letters to the church in this Macedonian city, partly because they were confused about what happens to Christians who die before Jesus returns"}},
+ {id:'athens',name:'Athens',x:345,y:252,lab:'below',
+  clues:{explorer:"Paul talked to Greek philosophers on a famous hill in this city and told them about the 'unknown God'",
+   pilgrim:"Paul stood on the Areopagus (also called Mars Hill) in this city and delivered one of the most famous sermons in the book of Acts",
+   scholar:"While waiting for his companions in this city, Paul was 'greatly distressed' by all the idols, then engaged Epicurean and Stoic philosophers who brought him to the Areopagus"}},
+ {id:'corinth',name:'Corinth',x:322,y:258,lab:'left',
+  clues:{explorer:"Paul lived and worked in this city for a long time and wrote two very long letters to the church here",
+   pilgrim:"Jesus appeared to Paul in a vision in this city and told him 'Do not be afraid — I have many people in this city'",
+   scholar:"Paul spent 18 months here working as a tentmaker with Aquila and Priscilla before being brought before the Roman proconsul Gallio"}},
+ {id:'rome',name:'Rome',x:112,y:150,lab:'above',
+  clues:{explorer:"Paul always wanted to visit this great powerful city — and he finally got there, even though it was as a prisoner",
+   pilgrim:"Paul wrote a long letter to the church in this city before he had ever set foot there, explaining the gospel from beginning to end",
+   scholar:"Paul arrived in this city as a prisoner after appealing to Caesar, and spent two years under house arrest 'welcoming all who came to him' and preaching the kingdom of God"}},
+ {id:'patmos',name:'Patmos',x:420,y:232,lab:'below',sea:true,
+  clues:{explorer:"The apostle John was sent to this small island and there he wrote the book of Revelation",
+   pilgrim:"John received his visions of heaven, angels, and the end of history on this rocky island after being exiled by the Roman emperor",
+   scholar:"John describes himself as sharing in 'the tribulation' with his fellow believers when he received the visions that make up Revelation — on what island?"}}
+];
+
+const TEAM_COLORS=['#C0392B','#2471A3','#1E8449','#D4AC0D'];
+const SVGNS='http://www.w3.org/2000/svg';
+
+/* ---------- STATE ---------- */
+const S={numTeams:0,teams:[],difficulty:'pilgrim',queue:[],qIndex:0,
+  turnsTaken:0,totalTurns:0,owner:0,answerer:0,attempted:[],
+  current:null,locked:false,hintUsed:false,timer:null,lastId:null,advTimer:null};
+
+/* ---------- INIT ---------- */
+document.querySelectorAll('.philip-mount').forEach(m=>{
+  m.innerHTML=philipSVG();
+  m.querySelector('.philip').setAttribute('data-exp',m.dataset.exp||'neutral');
+});
+document.querySelectorAll('#countRow .count-btn').forEach(b=>b.addEventListener('click',()=>selectCount(parseInt(b.dataset.n))));
+document.querySelectorAll('#diffRow .diff-tile').forEach(t=>t.addEventListener('click',()=>{
+  document.querySelectorAll('#diffRow .diff-tile').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');S.difficulty=t.dataset.diff;
+}));
+
+function showScreen(id){
+  if(id!=='end')document.querySelectorAll('.confetti').forEach(c=>c.remove());
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function goSetup(){showScreen('setup');buildNameFields(0);}
+
+let chosenCount=0;
+function selectCount(n){
+  chosenCount=n;
+  document.querySelectorAll('#countRow .count-btn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.n)===n));
+  buildNameFields(n);document.getElementById('beginBtn').disabled=false;
+}
+function buildNameFields(n){
+  const wrap=document.getElementById('nameFields');
+  if(wrap.children.length===0){
+    for(let i=0;i<4;i++){
+      const f=document.createElement('div');f.className='name-field';
+      f.innerHTML=`<label>Team ${i+1}</label><input type="text" value="Team ${i+1}" maxlength="16" style="border-left-color:${TEAM_COLORS[i]}">`;
+      wrap.appendChild(f);
+    }
+  }
+  [...wrap.children].forEach((f,i)=>f.classList.toggle('show',i<n));
+}
+
+/* ---------- START ---------- */
+function fisherYates(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function startGame(){
+  if(!chosenCount)return;
+  S.numTeams=chosenCount;
+  const inputs=document.querySelectorAll('#nameFields .name-field input');
+  S.teams=[];
+  for(let i=0;i<S.numTeams;i++) S.teams.push({name:(inputs[i].value.trim()||('Team '+(i+1))),color:TEAM_COLORS[i],score:0});
+  S.queue=fisherYates(LOCATIONS);S.qIndex=0;S.lastId=null;
+  S.turnsTaken=0;S.totalTurns=10*S.numTeams;S.owner=0;
+  buildMap();buildTopbar();showScreen('game');beginTurn();
+}
+function playAgain(){
+  S.teams.forEach(t=>t.score=0);
+  S.queue=fisherYates(LOCATIONS);S.qIndex=0;S.lastId=null;
+  S.turnsTaken=0;S.owner=0;buildTopbar();showScreen('game');beginTurn();
+}
+function changeSettings(){showScreen('setup');}
+
+function nextQuestion(){
+  if(S.qIndex>=S.queue.length){
+    let nq=fisherYates(LOCATIONS);
+    if(nq[0].id===S.lastId&&nq.length>1){[nq[0],nq[1]]=[nq[1],nq[0]];}
+    S.queue=nq;S.qIndex=0;
+  }
+  const q=S.queue[S.qIndex++];S.lastId=q.id;return q;
+}
+
+/* ---------- TOPBAR ---------- */
+function buildTopbar(){
+  const tb=document.getElementById('topbar');tb.innerHTML='';
+  S.teams.forEach((t,i)=>{
+    const tab=document.createElement('div');tab.className='team-tab';tab.id='tab'+i;
+    tab.style.setProperty('--tc',t.color);
+    tab.innerHTML=`<div class="tn">${escapeHtml(t.name)}</div><div class="ts">${t.score}</div>`;
+    tb.appendChild(tab);
+  });
+  const qc=document.createElement('div');qc.className='qcount';qc.id='qcount';
+  tb.appendChild(qc);
+  refreshTopbar();
+}
+function refreshTopbar(){
+  S.teams.forEach((t,i)=>{
+    const tab=document.getElementById('tab'+i);if(!tab)return;
+    tab.classList.toggle('active',i===S.answerer);
+    tab.classList.toggle('done',S.attempted.includes(i)&&i!==S.answerer);
+    tab.querySelector('.ts').textContent=t.score;
+  });
+  const qc=document.getElementById('qcount');
+  if(qc)qc.textContent=`Question ${Math.min(S.turnsTaken+1,S.totalTurns)} of ${S.totalTurns}`;
+}
+function escapeHtml(s){return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+/* ---------- MAP ---------- */
+function buildMap(){
+  // landmass paths (reused for cream coast halo + fill)
+  const bigLand = `
+    <path d="M80 110 L150 122 L168 168 L150 205 L172 246 L150 270 L118 250 L132 212 L105 192 L92 158 Z"/>
+    <path d="M116 268 L150 280 L120 292 Z"/>
+    <path d="M285 102 C345 92, 400 102, 420 130 C428 165, 410 200, 415 230 C405 258, 372 290, 350 288 C340 262, 315 270, 318 246 C300 232, 296 200, 302 175 C290 150, 282 122, 285 102 Z"/>
+    <path d="M448 205 C480 195, 545 188, 600 182 C650 170, 712 166, 770 180 L800 192 L800 640 L600 640 C590 585, 575 545, 572 505 C568 470, 575 435, 580 405 C572 380, 568 360, 580 345 C595 328, 612 318, 610 305 C632 300, 660 305, 656 300 C600 296, 540 300, 510 286 C480 272, 462 246, 458 226 C455 216, 451 209, 448 205 Z"/>`;
+  const islands = `
+    <path d="M520 300 C548 293, 580 295, 596 303 C580 314, 548 314, 526 311 C516 307, 516 303, 520 300 Z"/>
+    <path d="M360 312 C400 305, 450 308, 480 316 C450 326, 400 324, 360 320 Z"/>
+    <circle cx="420" cy="232" r="8"/>`;
+
+  // decorative mountains on land
+  let mtn='';[[640,300],[662,312],[700,420],[330,200],[358,212],[150,150]].forEach(([mx,my])=>{
+    mtn+=`<path d="M${mx} ${my} l9 -15 l9 15z" fill="var(--land-shadow)" opacity=".5"/>`;});
+
+  // city nodes
+  const nodes=LOCATIONS.map(c=>{
+    let lx=c.x,ly=c.y-16,anchor='middle';
+    if(c.lab==='right'){lx=c.x+15;ly=c.y+5;anchor='start';}
+    else if(c.lab==='left'){lx=c.x-15;ly=c.y+5;anchor='end';}
+    else if(c.lab==='below'){lx=c.x;ly=c.y+27;anchor='middle';}
+    return `<g class="city${c.sea?' sea':''}" id="city-${c.id}" role="button" tabindex="0" aria-label="${c.name}">
+        <circle class="hit" cx="${c.x}" cy="${c.y}" r="24"></circle>
+        <circle class="ring" cx="${c.x}" cy="${c.y}" r="13"></circle>
+        <circle class="dot" cx="${c.x}" cy="${c.y}" r="9"></circle>
+        <text class="clabel" x="${lx}" y="${ly}" text-anchor="${anchor}">${c.name}</text>
+      </g>`;
+  }).join('');
+
+  document.getElementById('mapFrame').innerHTML=`
+  <svg id="map" viewBox="0 0 1000 640" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Map of the first-century Mediterranean world">
+    <defs>
+      <pattern id="seaHatch" width="24" height="24" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
+        <rect width="24" height="24" fill="var(--sea-blue)"/>
+        <line x1="0" y1="0" x2="0" y2="24" stroke="var(--sea-light)" stroke-width="1.4" opacity=".22"/>
+      </pattern>
+      <linearGradient id="landGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#bcc78c"/><stop offset="100%" stop-color="#94ad68"/>
+      </linearGradient>
+      <radialGradient id="vign" cx="50%" cy="45%" r="78%">
+        <stop offset="74%" stop-color="#000" stop-opacity="0"/><stop offset="100%" stop-color="#10283c" stop-opacity=".22"/>
+      </radialGradient>
+    </defs>
+
+    <rect x="0" y="0" width="1000" height="640" fill="url(#seaHatch)"/>
+
+    <!-- cream coastline halo -->
+    <g fill="none" stroke="#F2E6BE" stroke-width="9" stroke-linejoin="round" opacity=".9">${bigLand}</g>
+    <g fill="none" stroke="#F2E6BE" stroke-width="6" stroke-linejoin="round" opacity=".9">${islands}</g>
+    <!-- land fill -->
+    <g fill="url(#landGrad)" stroke="#4f6a3c" stroke-width="2.2" stroke-linejoin="round">${bigLand}</g>
+    <g fill="url(#landGrad)" stroke="#4f6a3c" stroke-width="2" stroke-linejoin="round">${islands}</g>
+    <g>${mtn}</g>
+
+    <!-- inland waters -->
+    <path d="M704 408 Q686 470 664 540" fill="none" stroke="var(--sea-blue)" stroke-width="6" stroke-linecap="round"/>
+    <ellipse cx="706" cy="390" rx="15" ry="19" fill="var(--sea-blue)" stroke="var(--sea-light)" stroke-width="1.6"/>
+    <ellipse cx="672" cy="560" rx="13" ry="24" fill="var(--sea-blue)" stroke="var(--sea-light)" stroke-width="1.6"/>
+
+    <!-- sea labels -->
+    <text x="250" y="430" font-family="EB Garamond" font-style="italic" font-size="22" fill="#173f60" opacity=".5" text-anchor="middle">Mediterranean Sea</text>
+    <text x="470" y="150" font-family="EB Garamond" font-style="italic" font-size="15" fill="#173f60" opacity=".5" text-anchor="middle">Aegean Sea</text>
+
+    <!-- compass rose -->
+    <g transform="translate(910,560)" opacity=".95">
+      <circle r="34" fill="var(--parchment)" stroke="var(--ink-mid)" stroke-width="2"/>
+      <circle r="26" fill="none" stroke="var(--ink-mid)" stroke-width="1" opacity=".5"/>
+      <path d="M0 -30 L7 0 L0 30 L-7 0 Z" fill="var(--gold)" stroke="var(--ink-mid)" stroke-width="1"/>
+      <path d="M-30 0 L0 7 L30 0 L0 -7 Z" fill="var(--parchment-dk)" stroke="var(--ink-mid)" stroke-width="1"/>
+      <path d="M-20 -20 L4 -4 L20 -20 L4 4 Z" fill="var(--parchment-dk)" stroke="var(--ink-mid)" stroke-width=".8" opacity=".8"/>
+      <path d="M-20 20 L-4 4 L20 20 L4 -4 Z" fill="var(--parchment-dk)" stroke="var(--ink-mid)" stroke-width=".8" opacity=".8"/>
+      <text x="0" y="-21" text-anchor="middle" font-family="Cinzel" font-weight="700" font-size="13" fill="var(--ink)">N</text>
+    </g>
+
+    <rect x="0" y="0" width="1000" height="640" fill="url(#vign)" pointer-events="none"/>
+    <g id="cityLayer">${nodes}</g>
+    <g id="fxLayer"></g>
+  </svg>`;
+
+  LOCATIONS.forEach(c=>{
+    const g=document.getElementById('city-'+c.id);
+    addTap(g,()=>handleCityGuess(c.id));
+    g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();handleCityGuess(c.id);}});
+  });
+}
+
+let _tapGuard=false;
+function addTap(el,fn){
+  el.addEventListener('click',()=>{if(_tapGuard)return;fn();});
+  el.addEventListener('touchend',e=>{e.preventDefault();_tapGuard=true;fn();setTimeout(()=>_tapGuard=false,450);});
+}
+function fx(){return document.getElementById('fxLayer');}
+function createNS(tag){return document.createElementNS(SVGNS,tag);}
+function setPhilipAll(exp){document.querySelectorAll('#game .philip').forEach(p=>p.setAttribute('data-exp',exp));}
+function resetMapFx(){
+  fx().innerHTML='';
+  document.querySelectorAll('#cityLayer .dot').forEach(d=>{d.classList.remove('dotwin');d.style.fill='';});
+}
+
+/* ---------- TURN / STEAL FLOW ---------- */
+function beginTurn(){
+  if(S.turnsTaken>=S.totalTurns){endGame();return;}
+  S.current=nextQuestion();
+  S.answerer=S.owner;S.attempted=[];S.hintUsed=false;S.locked=true;
+  refreshTopbar();
+  const team=S.teams[S.owner];
+  const inter=document.getElementById('interstitial');
+  document.getElementById('itTxt').textContent=team.name+"'s Turn!";
+  inter.style.setProperty('--tc',team.color);
+  inter.classList.remove('show');void inter.offsetWidth;inter.classList.add('show');
+  setTimeout(()=>{inter.classList.remove('show');present(false);},1500);
+}
+
+function present(isSteal){
+  document.getElementById('mapFrame').className='map-frame';
+  resetMapFx();
+  const t=S.teams[S.answerer];
+  const tag=document.getElementById('turnTag');
+  tag.style.setProperty('--tc',t.color);
+  tag.textContent=t.name+(isSteal?' — steal it!':' — your turn!');
+  const bubble=document.getElementById('clueBubble');
+  bubble.classList.toggle('scholar',S.difficulty==='scholar');
+  bubble.textContent=S.current.clues[S.difficulty];
+  setPhilipAll(isSteal?'encouraging':'neutral');
+  const hb=document.getElementById('hintBtn');
+  if(S.difficulty==='pilgrim'&&!isSteal&&!S.hintUsed){hb.style.display='inline-block';hb.disabled=false;}
+  else hb.style.display='none';
+  const pc=document.getElementById('philipCorner');pc.classList.remove('philip-slide');void pc.offsetWidth;pc.classList.add('philip-slide');
+  refreshTopbar();
+  if(S.difficulty==='scholar')startTimer();else hideTimer();
+  S.locked=false;
+}
+
+function handleCityGuess(id){
+  if(S.locked)return;
+  S.locked=true;hideTimer();
+  S.attempted.push(S.answerer);
+  if(id===S.current.id) resolveCorrect(id); else resolveWrong(id);
+}
+
+function resolveCorrect(id){
+  const c=LOCATIONS.find(l=>l.id===id);
+  document.querySelector('#city-'+id+' .dot').classList.add('dotwin');
+  starBurst(c.x,c.y);
+  setPhilipAll('happy');
+  const isSteal=(S.answerer!==S.owner);
+  const pts=(!isSteal&&S.hintUsed)?5:10;
+  const t=S.teams[S.answerer];t.score+=pts;
+  refreshTopbar();floatScore(pts,S.answerer);
+  document.getElementById('clueBubble').textContent=isSteal?(t.name+' steals it — that is '+c.name+'!'):('Yes! That is '+c.name+'!');
+  document.getElementById('turnTag').textContent=isSteal?(t.name+' — steal!'):(t.name+' — correct!');
+  document.getElementById('hintBtn').style.display='none';
+  scheduleAdvance(2300);
+}
+
+function resolveWrong(clickedId){
+  const clicked=clickedId?LOCATIONS.find(l=>l.id===clickedId):null;
+  if(clicked) redRing(clicked.x,clicked.y);
+  setPhilipAll('encouraging');
+  document.getElementById('hintBtn').style.display='none';
+  const t=S.teams[S.answerer];
+  const remaining=[];for(let i=0;i<S.numTeams;i++) if(!S.attempted.includes(i)) remaining.push(i);
+  if(remaining.length>0){
+    let n=(S.answerer+1)%S.numTeams;while(S.attempted.includes(n)) n=(n+1)%S.numTeams;
+    const lead=clickedId?'Not quite, '+t.name+'! ':"Time's up, "+t.name+'! ';
+    document.getElementById('clueBubble').textContent=lead+'Another team can steal it!';
+    document.getElementById('turnTag').textContent=t.name+' — not quite!';
+    refreshTopbar();
+    setTimeout(()=>{S.answerer=n;present(true);},1400);
+  }else{
+    // every team has tried — now reveal the answer, no points
+    const cc=S.current;
+    goldPulse(cc.x,cc.y);dropPin(cc.x,cc.y,cc.name);
+    document.querySelector('#city-'+cc.id+' .dot').classList.add('dotwin');
+    document.getElementById('clueBubble').textContent='The answer was '+cc.name+'. On to the next!';
+    document.getElementById('turnTag').textContent='';
+    refreshTopbar();
+    scheduleAdvance(3300);
+  }
+}
+
+function scheduleAdvance(ms){clearTimeout(S.advTimer);S.advTimer=setTimeout(advance,ms);}
+function advance(){S.turnsTaken++;S.owner=(S.owner+1)%S.numTeams;beginTurn();}
+
+/* ---------- HINT (pilgrim, owner only) ---------- */
+function useHint(){
+  if(S.locked||S.hintUsed||S.answerer!==S.owner)return;
+  S.hintUsed=true;document.getElementById('hintBtn').style.display='none';
+  const c=S.current;
+  const g=createNS('g');
+  g.innerHTML=`<circle cx="${c.x}" cy="${c.y}" r="72" fill="var(--gold-bright)" fill-opacity="0.12" stroke="var(--gold-bright)" stroke-width="3" stroke-dasharray="9 6">
+    <animate attributeName="stroke-opacity" values="0.4;1;0.4" dur="1s" repeatCount="indefinite"/></circle>`;
+  fx().appendChild(g);
+  setTimeout(()=>g.remove(),2800);
+}
+
+/* ---------- TIMER (scholar) ---------- */
+function startTimer(){
+  const wrap=document.getElementById('timerWrap'),fill=document.getElementById('timerFill');
+  wrap.style.display='block';fill.style.width='100%';
+  let t=15.0;clearInterval(S.timer);
+  S.timer=setInterval(()=>{
+    t-=0.1;if(t<0)t=0;fill.style.width=(t/15*100)+'%';
+    if(t<=0){clearInterval(S.timer);if(!S.locked)timeUp();}
+  },100);
+}
+function hideTimer(){clearInterval(S.timer);document.getElementById('timerWrap').style.display='none';}
+function timeUp(){if(S.locked)return;S.locked=true;hideTimer();S.attempted.push(S.answerer);resolveWrong(null);}
+
+/* ---------- FX ---------- */
+function starBurst(x,y){
+  let pts='';for(let i=0;i<8;i++){const a=i*Math.PI/4;
+    pts+=`<line x1="${x}" y1="${y}" x2="${(x+Math.cos(a)*34).toFixed(1)}" y2="${(y+Math.sin(a)*34).toFixed(1)}" stroke="var(--gold-bright)" stroke-width="4" stroke-linecap="round"/>`;
+    pts+=`<circle cx="${(x+Math.cos(a)*34).toFixed(1)}" cy="${(y+Math.sin(a)*34).toFixed(1)}" r="4" fill="var(--gold-bright)"/>`;}
+  const g=createNS('g');g.setAttribute('class','starburst');
+  g.innerHTML=pts+`<circle cx="${x}" cy="${y}" r="10" fill="var(--gold-bright)" opacity=".9"/>`;
+  fx().appendChild(g);setTimeout(()=>g.remove(),900);
+}
+function redRing(x,y){const r=createNS('circle');r.setAttribute('class','redring');r.setAttribute('cx',x);r.setAttribute('cy',y);r.setAttribute('r',9);fx().appendChild(r);setTimeout(()=>r.remove(),900);}
+function goldPulse(x,y){const r=createNS('circle');r.setAttribute('class','goldpulse');r.setAttribute('cx',x);r.setAttribute('cy',y);r.setAttribute('r',7);fx().appendChild(r);setTimeout(()=>r.remove(),3300);}
+function dropPin(x,y,name){
+  const g=createNS('g');g.setAttribute('class','pin');
+  g.innerHTML=`
+    <path d="M${x} ${y} C ${x-13} ${y-26}, ${x-13} ${y-42}, ${x} ${y-42} C ${x+13} ${y-42}, ${x+13} ${y-26}, ${x} ${y} Z" fill="var(--gold-bright)" stroke="var(--ink)" stroke-width="2"/>
+    <circle cx="${x}" cy="${y-34}" r="6" fill="var(--ink)"/>
+    <rect x="${x-54}" y="${y-72}" width="108" height="24" rx="6" fill="var(--parchment)" stroke="var(--ink-mid)" stroke-width="1.5"/>
+    <text x="${x}" y="${y-55}" text-anchor="middle" font-family="Cinzel" font-weight="700" font-size="14" fill="var(--ink)">${name}</text>`;
+  fx().appendChild(g);
+}
+function floatScore(pts,teamIdx){
+  const tab=document.getElementById('tab'+teamIdx);if(!tab)return;
+  const r=tab.getBoundingClientRect();
+  const el=document.createElement('div');el.className='float-score';el.textContent='+'+pts;
+  el.style.color=S.teams[teamIdx].color;el.style.left=(r.left+r.width/2-14)+'px';el.style.top=(r.bottom-6)+'px';
+  document.body.appendChild(el);setTimeout(()=>el.remove(),1300);
+}
+
+/* ---------- END ---------- */
+function endGame(){
+  hideTimer();
+  const ranked=S.teams.map((t,i)=>({...t,idx:i})).sort((a,b)=>b.score-a.score);
+  const top=ranked[0].score;const tie=ranked.filter(t=>t.score===top).length>1;
+  document.getElementById('endBubble').textContent=tie?"A tie — you're both champions!":"Well done, explorers! You've journeyed through Bible lands!";
+  setPhilipAll('excited');
+  const wrap=document.getElementById('endCards');wrap.innerHTML='';
+  ranked.forEach((t,rank)=>{
+    const isWin=t.score===top;
+    const card=document.createElement('div');card.className='score-card'+(isWin?' win':'');
+    card.style.setProperty('--tc',t.color);card.style.animationDelay=(rank*0.14)+'s';
+    card.innerHTML=`<div class="rank">#${rank+1}</div><div class="nm">${escapeHtml(t.name)} ${isWin?'<span class="ribbon">🏅</span>':''}</div><div class="pts" style="color:${t.color}">${t.score}</div>`;
+    wrap.appendChild(card);
+  });
+  showScreen('end');spawnConfetti();
+}
+function spawnConfetti(){
+  const colors=['#C0392B','#2471A3','#1E8449','#D4AC0D','#C9973D','#F0C040','#2E8B57'];
+  document.querySelectorAll('.confetti').forEach(c=>c.remove());
+  for(let i=0;i<42;i++){
+    const c=document.createElement('div');c.className='confetti';
+    c.style.left=Math.random()*100+'vw';c.style.background=colors[i%colors.length];
+    c.style.animationDuration=(3+Math.random()*3)+'s';c.style.animationDelay=(Math.random()*3)+'s';
+    c.style.transform='rotate('+(Math.random()*360)+'deg)';c.style.borderRadius=Math.random()>.5?'2px':'50%';
+    document.body.appendChild(c);
+  }
+}
+</script>
+</body>
+</html>
